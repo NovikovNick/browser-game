@@ -1,0 +1,58 @@
+buildscript {
+    repositories { mavenCentral() }
+}
+
+plugins {
+    id 'org.springframework.boot' version '2.3.3.RELEASE' apply false
+}
+
+subprojects {
+    group 'com.metalheart'
+    version '0.9.0'
+
+    apply plugin: 'java'
+    apply plugin: 'java-library'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    apply plugin: 'org.springframework.boot'
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+
+    bootJar.enabled = false
+    jar.enabled = true
+
+    dependencyManagement {
+        dependencies {
+
+            //all spring boot dependencies omitted, because applied 'org.springframework.boot' plugin
+
+            dependency "io.springfox:springfox-boot-starter:$swaggerUiVersion"
+
+
+            //other
+            dependency "org.projectlombok:lombok:$lombokVersion"
+
+            dependency "org.mapstruct:mapstruct-jdk8:$mapstructVersion"
+            dependency "org.mapstruct:mapstruct-processor:$mapstructVersion"
+        }
+    }
+    dependencies {
+
+        // lombok
+        implementation "org.projectlombok:lombok"
+        annotationProcessor "org.projectlombok:lombok"
+        testAnnotationProcessor "org.projectlombok:lombok"
+
+        // mapstruct
+        implementation "org.mapstruct:mapstruct-jdk8"
+        annotationProcessor "org.mapstruct:mapstruct-processor"
+        testAnnotationProcessor "org.mapstruct:mapstruct-processor"
+    }
+}

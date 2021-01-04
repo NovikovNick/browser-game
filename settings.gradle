@@ -1,0 +1,4 @@
+rootProject.name = 'browser-game'
+include 'app'
+include 'web'
+

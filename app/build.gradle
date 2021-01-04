@@ -1,0 +1,12 @@
+dependencies {
+
+    implementation project(":web")
+
+    //spring
+    implementation "org.springframework.boot:spring-boot-starter"
+}
+
+bootJar {
+    enabled = true
+    archiveName 'app.jar'
+}
