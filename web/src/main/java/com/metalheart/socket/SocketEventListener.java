@@ -1,11 +1,8 @@
 package com.metalheart.socket;
 
 import com.metalheart.model.Constant;
-import com.metalheart.model.Player;
 import com.metalheart.model.ServerTicEvent;
 import com.metalheart.service.GameStateService;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -25,19 +22,15 @@ public class SocketEventListener {
     @Autowired
     private GameStateService gameStateService;
 
+    public SocketEventListener(SimpMessagingTemplate messagingTemplate,
+                               GameStateService gameStateService) {
+        this.messagingTemplate = messagingTemplate;
+        this.gameStateService = gameStateService;
+    }
+
     @EventListener
     private void handleGameStateEvent(ServerTicEvent event) {
-
-
-        Set<Player> players = event.getPlayers().entrySet().stream()
-            .map(entry -> Player.builder()
-                .id(entry.getKey())
-                .x(entry.getValue().getD0())
-                .y(entry.getValue().getD1())
-                .build())
-            .collect(Collectors.toSet());
-
-        messagingTemplate.convertAndSend(Constant.OUTPUT_PLAYER_STATE, players);
+        messagingTemplate.convertAndSend(Constant.OUTPUT_PLAYER_STATE, event.getSnapshot());
     }
 
 

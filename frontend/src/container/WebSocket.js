@@ -26,13 +26,13 @@ export function sendMessage() {
 
     webSocket.publish({
         destination: ENDPOINT.TOPIC_PLAYER_UPDATE,
-        body: x + "." + y
+        body: JSON.stringify({x: x, y: y})
     });
 }
 
 
 const ENDPOINT = {
-    HOST: "http://localhost:8080",
+    HOST: "http://192.168.0.103:8080",
     APP_NAME: "/game",
     TOPIC_PLAYER_LIST: '/backend/player/list',
     TOPIC_PLAYER_UPDATE: '/frontend/update'
@@ -40,7 +40,7 @@ const ENDPOINT = {
 
 const webSocket = new Client();
 
-function WebSocket({actions}) {
+function WebSocket({snapshots, actions}) {
 
     useEffect(() => {
         webSocket.configure({
@@ -55,8 +55,8 @@ function WebSocket({actions}) {
                 webSocket.sessionId = sessionId;
 
                 webSocket.subscribe(ENDPOINT.TOPIC_PLAYER_LIST, message => {
-                    const messages = JSON.parse(message.body);
-                    actions.updateState(messages)
+                    const state = JSON.parse(message.body);
+                    actions.addSnapshot(state);
                 });
             },
             onWebSocketError: (e) => {
@@ -90,7 +90,7 @@ function WebSocket({actions}) {
 }
 
 const mapStateToProps = state => ({
-    players: state.players
+    snapshots: state.state.snapshots
 });
 const mapDispatchToProps = dispatch => ({
     actions: bindActionCreators(Store, dispatch)

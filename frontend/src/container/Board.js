@@ -18,7 +18,8 @@ function Board({players}) {
             {players.map((item, i) => <Player key={i}
                                               x={item.x}
                                               y={item.y}
-                                              name={item.id}/>)}
+                                              name={item.id}
+                                              color={"purple"}/>)}
         </svg>
     );
 }

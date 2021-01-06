@@ -2,6 +2,7 @@ package com.metalheart.controller;
 
 import com.metalheart.model.Constant;
 import com.metalheart.model.Point2d;
+import com.metalheart.model.UpdatePositionRequest;
 import com.metalheart.service.GameStateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,14 +20,11 @@ public class WSController {
     private GameStateService gameStateService;
 
     @MessageMapping(Constant.INPUT_PLAYER_STATE)
-    public void messages(@Payload String msg,
+    public void messages(@Payload UpdatePositionRequest req,
                          Authentication authentication,
                          @Header("simpSessionId") String sessionId) {
 
-        String[] posStrArr = msg.split("\\.");
-        Integer posX = Integer.parseInt(posStrArr[0]);
-        Integer posY = Integer.parseInt(posStrArr[1]);
 
-        gameStateService.changePlayerState(sessionId, new Point2d(posX, posY));
+        gameStateService.changePlayerState(sessionId, new Point2d(req.getX(), req.getY()));
     }
 }
