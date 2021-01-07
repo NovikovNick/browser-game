@@ -41,12 +41,8 @@ public class GameLauncherServiceImpl implements GameLauncherService {
 
                 Instant t0 = Instant.now();
 
-                Set<Player> players = stateService.getGameState().entrySet().stream()
-                    .map(entry -> Player.builder()
-                        .id(entry.getKey())
-                        .x(entry.getValue().getD0())
-                        .y(entry.getValue().getD1())
-                        .build())
+                Set<Player> players = stateService.getGameState().values()
+                    .stream()
                     .collect(Collectors.toSet());
 
                 StateSnapshot stateSnapshot = StateSnapshot.builder()

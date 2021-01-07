@@ -1,21 +1,26 @@
 import React from 'react';
-import {combineReducers, createStore} from 'redux';
+import {applyMiddleware, combineReducers, createStore} from 'redux';
 import {Provider} from 'react-redux';
+import thunk from 'redux-thunk';
 
 import * as reducers from './store/reducers';
+// Importing Sass with Bootstrap CSS
+import './App.scss';
 
-import './App.css';
 import Board from "./container/Board";
 import WebSocket from "./container/WebSocket";
 import * as actions from "./store/ReduxActions";
+import {Container} from "react-bootstrap";
+import Controls from "./container/Controls";
 
 
-const store = createStore(combineReducers(reducers),
-    window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
+const store = createStore(combineReducers(reducers), applyMiddleware(thunk));
+// window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
 
 let timerId = setTimeout(function tick() {
 
     const snapshots = store.getState().state.snapshots;
+    const session = store.getState().state.session;
 
     if (snapshots) {
         const fst = snapshots[0]
@@ -44,6 +49,7 @@ let timerId = setTimeout(function tick() {
                     const p2 = sndGroupedById[id]
                     const player = {
                         id: id,
+                        username: p1.username,
                         x: p2.x + (p1.x - p2.x) * mod,
                         y: p2.y + (p1.y - p2.y) * mod
                     };
@@ -60,10 +66,20 @@ let timerId = setTimeout(function tick() {
 function App() {
     return (
         <Provider store={store}>
-            <div className="App">
-                <WebSocket/>
-                <Board/>
-            </div>
+
+            <WebSocket host={"http://192.168.0.103:8080"}/>
+            <Board/>
+
+            <Container className="p-3">
+                <div className="row">
+                    <nav className="col-md-2 d-none d-md-block bg-light sidebar">
+                        <Controls/>
+                    </nav>
+
+                    <main role="main" className="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4"></main>
+
+                </div>
+            </Container>
         </Provider>
     );
 }

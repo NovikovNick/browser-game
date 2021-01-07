@@ -10,6 +10,7 @@ import lombok.EqualsAndHashCode;
 public class Player {
 
     private String id;
+    private String username;
     private int x;
     private int y;
 }
