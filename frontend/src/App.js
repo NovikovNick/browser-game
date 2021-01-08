@@ -20,7 +20,6 @@ const store = createStore(combineReducers(reducers), applyMiddleware(thunk));
 let timerId = setTimeout(function tick() {
 
     const snapshots = store.getState().state.snapshots;
-    const session = store.getState().state.session;
 
     if (snapshots) {
         const fst = snapshots[0]
@@ -28,12 +27,12 @@ let timerId = setTimeout(function tick() {
         if (fst && snd && fst.players && snd.players) {
 
             const fstGroupedById = fst.players.reduce((r, a) => {
-                r[a.id] = a;
+                r[a.sessionId] = a;
                 return r;
             }, {});
 
             const sndGroupedById = snd.players.reduce((r, a) => {
-                r[a.id] = a;
+                r[a.sessionId] = a;
                 return r;
             }, {});
 
@@ -43,15 +42,17 @@ let timerId = setTimeout(function tick() {
             const mod = frame < delay ? 1 : delay / frame;
 
             const players = [];
-            for (const [id, value] of Object.entries(fstGroupedById)) {
-                if (sndGroupedById[id]) {
+            for (const [sessionId, value] of Object.entries(fstGroupedById)) {
+                if (sndGroupedById[sessionId]) {
                     const p1 = value
-                    const p2 = sndGroupedById[id]
+                    const p2 = sndGroupedById[sessionId]
                     const player = {
-                        id: id,
+                        id: sessionId,
                         username: p1.username,
-                        x: p2.x + (p1.x - p2.x) * mod,
-                        y: p2.y + (p1.y - p2.y) * mod
+                        x: p2.mousePosX + (p1.mousePosX - p2.mousePosX) * mod,
+                        y: p2.mousePosY + (p1.mousePosY - p2.mousePosY) * mod,
+                        characterPosX: p2.characterPosX + (p1.characterPosX - p2.characterPosX) * mod,
+                        characterPosY: p2.characterPosY + (p1.characterPosY - p2.characterPosY) * mod,
                     };
                     players.push(player);
                 }
@@ -72,7 +73,7 @@ function App() {
 
             <Container className="p-3">
                 <div className="row">
-                    <nav className="col-md-2 d-none d-md-block bg-light sidebar">
+                    <nav className="offset-md-10 col-md-2 d-none d-md-block bg-light sidebar">
                         <Controls/>
                     </nav>
 

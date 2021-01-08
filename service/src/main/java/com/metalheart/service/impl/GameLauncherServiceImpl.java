@@ -1,6 +1,6 @@
 package com.metalheart.service.impl;
 
-import com.metalheart.model.Player;
+import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.ServerTicEvent;
 import com.metalheart.model.StateSnapshot;
 import com.metalheart.service.GameLauncherService;
@@ -16,6 +16,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class GameLauncherServiceImpl implements GameLauncherService {
+
+    private static final int TICK_RATE = 15;
+    private static final int TICK_DELAY = 1000 / TICK_RATE;
 
     private AtomicBoolean running;
     private AtomicLong sequenceNumber;
@@ -41,7 +44,7 @@ public class GameLauncherServiceImpl implements GameLauncherService {
 
                 Instant t0 = Instant.now();
 
-                Set<Player> players = stateService.getGameState().values()
+                Set<PlayerSnapshot> players = stateService.calculateGameState(TICK_DELAY).values()
                     .stream()
                     .collect(Collectors.toSet());
 
@@ -53,7 +56,8 @@ public class GameLauncherServiceImpl implements GameLauncherService {
 
                 applicationEventPublisher.publishEvent(new ServerTicEvent(stateSnapshot));
 
-                TimeUnit.MILLISECONDS.sleep(98 - Instant.now().minusMillis(t0.toEpochMilli()).toEpochMilli());
+                long calculationTime = Instant.now().minusMillis(t0.toEpochMilli()).toEpochMilli();
+                TimeUnit.MILLISECONDS.sleep(TICK_DELAY - calculationTime);
 
             } catch (InterruptedException e) {
                 e.printStackTrace();

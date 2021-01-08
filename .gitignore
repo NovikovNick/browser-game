@@ -21,4 +21,5 @@ docker/application.yml
 
 frontend/node_modules
 frontend/generated
+frontend/.eslintcache
 web/src/main/resources/static

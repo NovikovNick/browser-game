@@ -10,5 +10,5 @@ public class StateSnapshot {
 
     private long sequenceNumber;
     private long timestamp;
-    private Set<Player> players;
+    private Set<PlayerSnapshot> players;
 }
