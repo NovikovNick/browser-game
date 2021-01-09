@@ -1,16 +1,15 @@
 package com.metalheart.service.impl;
 
 import com.metalheart.model.PlayerSnapshot;
-import com.metalheart.model.ServerTicEvent;
 import com.metalheart.model.StateSnapshot;
+import com.metalheart.model.event.ServerTicEvent;
 import com.metalheart.service.GameLauncherService;
 import com.metalheart.service.GameStateService;
 import java.time.Instant;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -44,14 +43,12 @@ public class GameLauncherServiceImpl implements GameLauncherService {
 
                 Instant t0 = Instant.now();
 
-                Set<PlayerSnapshot> players = stateService.calculateGameState(TICK_DELAY).values()
-                    .stream()
-                    .collect(Collectors.toSet());
+                Map<String, PlayerSnapshot> snapshots = stateService.calculateGameState(TICK_DELAY);
 
                 StateSnapshot stateSnapshot = StateSnapshot.builder()
                     .sequenceNumber(sequenceNumber.incrementAndGet())
                     .timestamp(Instant.now().toEpochMilli())
-                    .players(players)
+                    .snapshot(snapshots.values().stream().findFirst().orElse(null)) // tmp
                     .build();
 
                 applicationEventPublisher.publishEvent(new ServerTicEvent(stateSnapshot));

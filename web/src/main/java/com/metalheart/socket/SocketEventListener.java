@@ -1,7 +1,7 @@
 package com.metalheart.socket;
 
 import com.metalheart.model.Constant;
-import com.metalheart.model.ServerTicEvent;
+import com.metalheart.model.event.ServerTicEvent;
 import com.metalheart.service.GameStateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

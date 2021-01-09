@@ -1,5 +1,8 @@
 package com.metalheart.model;
 
+import com.metalheart.model.game.Player;
+import com.metalheart.model.game.Wall;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -8,14 +11,7 @@ import lombok.EqualsAndHashCode;
 @Builder
 @EqualsAndHashCode(of = "sessionId")
 public class PlayerSnapshot {
-
-    private String sessionId;
-
-    private String username;
-
-    private Integer mousePosX;
-    private Integer mousePosY;
-
-    private Integer characterPosX;
-    private Integer characterPosY;
+    private Player character;
+    private List<Player> enemies;
+    private List<Wall> walls;
 }

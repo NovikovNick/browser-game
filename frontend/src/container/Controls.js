@@ -7,13 +7,13 @@ import {Formik} from "formik";
 import {Button, Form, Row, Col} from 'react-bootstrap';
 
 
-function Controls({actions, session}) {
+function Controls({actions, character}) {
 
     const [errors, setErrors] = useState({});
 
     const onSubmit = (values, {resetForm}) => {
 
-        values.sessionId = session.sessionId
+        values.sessionId = character.sessionId
         actions.changePlayerName(values)
             .then((res) => resetForm({}))
             .catch(() => setErrors({
@@ -24,7 +24,7 @@ function Controls({actions, session}) {
     return (
         <Formik
             enableReinitialize
-            initialValues={{username: session.username}}
+            initialValues={{username: character.username}}
             onSubmit={onSubmit}>
             {({
                   handleChange,
@@ -63,7 +63,7 @@ function Controls({actions, session}) {
 }
 
 const mapStateToProps = state => ({
-    session: state.state.session
+    character: state.state.character
 });
 const mapDispatchToProps = dispatch => ({
     actions: bindActionCreators(Store, dispatch)

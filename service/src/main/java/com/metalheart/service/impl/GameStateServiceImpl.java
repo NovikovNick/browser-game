@@ -2,9 +2,20 @@ package com.metalheart.service.impl;
 
 import com.metalheart.model.PlayerInput;
 import com.metalheart.model.PlayerSnapshot;
+import com.metalheart.model.common.Polygon2d;
+import com.metalheart.model.common.Vector2d;
+import com.metalheart.model.game.GameObject;
+import com.metalheart.model.game.Player;
+import com.metalheart.model.game.RigidBody;
+import com.metalheart.model.game.Transform;
+import com.metalheart.model.game.Wall;
 import com.metalheart.service.GameStateService;
 import com.metalheart.service.UsernameService;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -17,8 +28,9 @@ import org.springframework.util.StringUtils;
 public class GameStateServiceImpl implements GameStateService {
 
     private static final float SPEED = 0.5f;
-    private final Map<String, PlayerSnapshot> players;
-    private Map<String, Set<PlayerInput>> inputs;
+    private final Map<String, Player> players;
+    private final Map<String, Set<PlayerInput>> inputs;
+    private final List<Wall> walls;
 
 
     private UsernameService usernameService;
@@ -26,22 +38,29 @@ public class GameStateServiceImpl implements GameStateService {
     public GameStateServiceImpl(UsernameService usernameService) {
         this.usernameService = usernameService;
         this.players = new ConcurrentHashMap<>();
+        this.walls = new ArrayList<>();
         this.inputs = new ConcurrentHashMap<>();
     }
 
     @Override
-    public void registerPlayer(String playerId) {
+    public void registerPlayer(String sessionId) {
 
-        PlayerSnapshot player = PlayerSnapshot.builder()
-            .sessionId(playerId)
+        Player player = Player.builder()
+            .mousePos(Vector2d.ZERO_VECTOR)
+            .gameObject(GameObject.builder()
+                .transform(Transform.builder()
+                    .position(Vector2d.ZERO_VECTOR)
+                    .rotation(Vector2d.ZERO_VECTOR)
+                    .build())
+                .rigidBody(RigidBody.builder()
+                    .shape(Polygon2d.rectangle())
+                    .build())
+                .build())
+            .sessionId(sessionId)
             .username(usernameService.generateUsername())
-            .mousePosX(0)
-            .mousePosY(0)
-            .characterPosX(0)
-            .characterPosY(0)
             .build();
 
-        players.put(playerId, player);
+        players.put(sessionId, player);
     }
 
     @Override
@@ -49,7 +68,7 @@ public class GameStateServiceImpl implements GameStateService {
 
         username = StringUtils.isEmpty(username) ? usernameService.generateUsername() : username;
 
-        PlayerSnapshot player = players.get(playerId);
+        Player player = players.get(playerId);
         player.setUsername(username);
         return username;
     }
@@ -74,26 +93,45 @@ public class GameStateServiceImpl implements GameStateService {
             first.ifPresent(req -> {
 
                 if (players.containsKey(sessionId)) {
-                    PlayerSnapshot snapshot = players.get(sessionId);
-                    snapshot.setMousePosX(req.getMousePosX());
-                    snapshot.setMousePosY(req.getMousePosY());
+                    Player player = players.get(sessionId);
+                    player.setMousePos(new Vector2d(req.getMousePosX(), req.getMousePosY()));
 
-                    if (req.getIsPressedW()) {
-                        snapshot.setCharacterPosY((int) (snapshot.getCharacterPosY() - SPEED * tickDelay));
-                    }
-                    if (req.getIsPressedS()) {
-                        snapshot.setCharacterPosY((int) (snapshot.getCharacterPosY() + SPEED * tickDelay));
-                    }
+                    float magnitude = SPEED * tickDelay;
 
-                    if (req.getIsPressedA()) {
-                        snapshot.setCharacterPosX((int) (snapshot.getCharacterPosX() - SPEED * tickDelay));
-                    }
-                    if (req.getIsPressedD()) {
-                        snapshot.setCharacterPosX((int) (snapshot.getCharacterPosX() + SPEED * tickDelay));
-                    }
+                    Vector2d direction = Vector2d.ZERO_VECTOR;
+                    if (req.getIsPressedW()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1.reversed());
+                    if (req.getIsPressedS()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1);
+                    if (req.getIsPressedA()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0.reversed());
+                    if (req.getIsPressedD()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0);
+
+
+                    player.setGameObject(GameObject.builder()
+                        .transform(Transform.builder()
+                            .position(player.getGameObject().getTransform().getPosition().plus(direction.scale(magnitude)))
+                            .rotation(Vector2d.ZERO_VECTOR)
+                            .build())
+                        .rigidBody(RigidBody.builder()
+                            .shape(Polygon2d.rectangle())
+                            .build())
+                        .build());
                 }
             });
         }
-        return players;
+
+        Map<String, PlayerSnapshot> snapshots = new HashMap<>();
+        players.forEach((id, player) -> {
+
+            List<Player> enemies = new ArrayList<>(players.values());
+            enemies.remove(player);
+
+            PlayerSnapshot snapshot = PlayerSnapshot.builder()
+                .character(player)
+                .enemies(enemies)
+                .walls(Collections.emptyList())
+                .build();
+            snapshots.put(id, snapshot);
+        });
+
+        return snapshots;
     }
 }

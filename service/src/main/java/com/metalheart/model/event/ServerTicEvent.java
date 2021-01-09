@@ -1,5 +1,6 @@
-package com.metalheart.model;
+package com.metalheart.model.event;
 
+import com.metalheart.model.StateSnapshot;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

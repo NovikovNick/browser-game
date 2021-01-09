@@ -24,7 +24,41 @@ let timerId = setTimeout(function tick() {
     if (snapshots) {
         const fst = snapshots[0]
         const snd = snapshots[1]
-        if (fst && snd && fst.players && snd.players) {
+
+        if (fst && snd && fst.character && snd.character) {
+
+            const frame = fst.timestamp - snd.timestamp;
+            const timestamp = new Date().getTime();
+            const delay = timestamp - fst.timestamp;
+            const mod = frame < delay ? 1 : delay / frame;
+
+            const p1 = fst.character
+            const p2 = snd.character
+            const character = {
+                ...p1,
+                mousePos: {
+                    d0: p2.mousePos.d0 + (p1.mousePos.d0 - p2.mousePos.d0) * mod,
+                    d1: p2.mousePos.d1 + (p1.mousePos.d1 - p2.mousePos.d1) * mod
+                },
+                gameObject: {
+                    transform: {
+                        position: {
+                            d0: p2.gameObject.transform.position.d0 + (p1.gameObject.transform.position.d0 - p2.gameObject.transform.position.d0) * mod,
+                            d1: p2.gameObject.transform.position.d1 + (p1.gameObject.transform.position.d1 - p2.gameObject.transform.position.d1) * mod
+                        },
+                        rotation: {d0: 0.0, d1: 0.0}
+                    },
+                    rigidBody: {
+                        shape: {
+                            points: []
+                        }
+                    }
+                }
+            };
+            store.dispatch(actions.updateState(character));
+        }
+
+        if (fst && snd && fst.players && snd.players) { // unused
 
             const fstGroupedById = fst.players.reduce((r, a) => {
                 r[a.sessionId] = a;
