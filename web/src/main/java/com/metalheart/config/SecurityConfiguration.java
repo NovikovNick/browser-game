@@ -31,7 +31,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 "/css/**",
                 "/images/**",
                 "/webjars/**").permitAll()
-            .antMatchers("/secured/**").hasRole("USER")
+            .antMatchers("/secured/**").anonymous()//.hasRole("USER")
             .and()
             .httpBasic();
     }

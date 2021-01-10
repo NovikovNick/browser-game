@@ -17,13 +17,13 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
         registry.addEndpoint(Constant.APP_NAME)
             .setAllowedOrigins("*")
+            .setHandshakeHandler(new CustomHandshakeHandler())
             .withSockJS();
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.setApplicationDestinationPrefixes(Constant.INPUT_BROKER);
-        // config.setUserDestinationPrefix("/secured/user");
-        config.enableSimpleBroker(Constant.OUTPUT_BROKER);
+        config.setUserDestinationPrefix("/secured/user");
     }
 }

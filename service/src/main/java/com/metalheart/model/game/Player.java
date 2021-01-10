@@ -10,6 +10,7 @@ public class Player {
 
     private String sessionId;
     private String username;
+    private String id;
 
     private Vector2d mousePos;
     private GameObject gameObject;

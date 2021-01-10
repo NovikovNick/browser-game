@@ -30,7 +30,12 @@ public class SocketEventListener {
 
     @EventListener
     private void handleGameStateEvent(ServerTicEvent event) {
-        messagingTemplate.convertAndSend(Constant.OUTPUT_PLAYER_STATE, event.getSnapshot());
+
+        event.getSnapshots().forEach((sessionId, snapshot) -> {
+
+            String id = snapshot.getSnapshot().getCharacter().getId();
+            messagingTemplate.convertAndSendToUser(id, Constant.OUTPUT_PLAYER_STATE, snapshot);
+        });
     }
 
 
@@ -39,7 +44,8 @@ public class SocketEventListener {
 
         SimpMessageHeaderAccessor headers = SimpMessageHeaderAccessor.wrap(event.getMessage());
         String sessionId = headers.getSessionId();
-        gameStateService.registerPlayer(sessionId);
+        String id = event.getUser().getName();
+        gameStateService.registerPlayer(sessionId, id);
     }
 
     @EventListener

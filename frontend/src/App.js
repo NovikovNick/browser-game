@@ -61,7 +61,7 @@ let timerId = setTimeout(function tick() {
 
             // enemies
             const enemies = [];
-            /*const fstGroupedById = fst.enemies.reduce((r, a) => {
+            const fstGroupedById = fst.enemies.reduce((r, a) => {
                 r[a.sessionId] = a;
                 return r;
             }, {});
@@ -77,7 +77,7 @@ let timerId = setTimeout(function tick() {
                     const p2 = sndGroupedById[sessionId]
                     enemies.push(interpolatePosition(p1, p2, mod));
                 }
-            }*/
+            }
 
             store.dispatch(actions.updateState(character, enemies));
         }

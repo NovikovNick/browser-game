@@ -3,10 +3,11 @@ package com.metalheart.service;
 import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.PlayerInput;
 import java.util.Map;
+import java.util.UUID;
 
 public interface GameStateService {
 
-    void registerPlayer(String playerId);
+    void registerPlayer(String playerId, String id);
 
     String updateUsername(String playerId, String username);
 

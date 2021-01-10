@@ -47,11 +47,12 @@ public class GameStateServiceImpl implements GameStateService {
     }
 
     @Override
-    public void registerPlayer(String sessionId) {
+    public void registerPlayer(String sessionId, String id) {
 
         Vector2d start = Vector2d.of(800, 200);
 
         Player player = Player.builder()
+            .id(id)
             .mousePos(start)
             .gameObject(GameObject.builder()
                 .transform(Transform.builder()

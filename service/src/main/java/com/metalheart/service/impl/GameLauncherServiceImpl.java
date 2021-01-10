@@ -1,6 +1,5 @@
 package com.metalheart.service.impl;
 
-import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.StateSnapshot;
 import com.metalheart.model.event.ServerTicEvent;
 import com.metalheart.service.GameLauncherService;
@@ -10,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -43,15 +43,19 @@ public class GameLauncherServiceImpl implements GameLauncherService {
 
                 Instant t0 = Instant.now();
 
-                Map<String, PlayerSnapshot> snapshots = stateService.calculateGameState(TICK_DELAY);
+                long sequenceNumber = this.sequenceNumber.incrementAndGet();
+                long timestamp = t0.toEpochMilli();
 
-                StateSnapshot stateSnapshot = StateSnapshot.builder()
-                    .sequenceNumber(sequenceNumber.incrementAndGet())
-                    .timestamp(Instant.now().toEpochMilli())
-                    .snapshot(snapshots.values().stream().findFirst().orElse(null)) // tmp
-                    .build();
+                Map<String, StateSnapshot> snapshots = stateService.calculateGameState(TICK_DELAY).entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> {
+                        return StateSnapshot.builder()
+                                .sequenceNumber(sequenceNumber)
+                                .timestamp(timestamp)
+                                .snapshot(entry.getValue())
+                                .build();
+                    }));
 
-                applicationEventPublisher.publishEvent(new ServerTicEvent(stateSnapshot));
+                applicationEventPublisher.publishEvent(new ServerTicEvent(snapshots));
 
                 long calculationTime = Instant.now().minusMillis(t0.toEpochMilli()).toEpochMilli();
                 TimeUnit.MILLISECONDS.sleep(TICK_DELAY - calculationTime);

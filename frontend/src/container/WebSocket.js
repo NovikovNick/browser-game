@@ -58,7 +58,7 @@ function onMouseUpdate(e) {
 
 const ENDPOINT = {
     APP_NAME: "/game",
-    TOPIC_PLAYER_LIST: '/backend/player/list',
+    TOPIC_PLAYER_LIST: "/secured/user/queue/specific-user-user",
     TOPIC_PLAYER_UPDATE: '/frontend/update'
 };
 
@@ -79,7 +79,7 @@ function WebSocket({host, actions}) {
                 actions.updateSessionId(sessionId)
                 actions.changePlayerName({sessionId: sessionId})
 
-                webSocket.subscribe(ENDPOINT.TOPIC_PLAYER_LIST, message => {
+                webSocket.subscribe(ENDPOINT.TOPIC_PLAYER_LIST + sessionId, message => {
                     const state = JSON.parse(message.body);
                     actions.addSnapshot(state);
                 });
