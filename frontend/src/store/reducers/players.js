@@ -13,6 +13,9 @@ const initialState = {
             rigidBody: {
                 shape: {
                     points: []
+                },
+                transformed: {
+                    points: []
                 }
             }
         }
@@ -49,7 +52,8 @@ export default function players(state = initialState, action) {
                     ...state.character,
                     mousePos: action.character.mousePos,
                     gameObject: action.character.gameObject
-                }
+                },
+                enemies: action.enemies
             }
         }
         case types.UPDATE_SNAPSHOTS: {

@@ -17,6 +17,30 @@ import Controls from "./container/Controls";
 const store = createStore(combineReducers(reducers), applyMiddleware(thunk));
 // window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
 
+function interpolatePosition(p1, p2, mod) {
+
+    const character = {
+        ...p1,
+        mousePos: {
+            d0: p2.mousePos.d0 + (p1.mousePos.d0 - p2.mousePos.d0) * mod,
+            d1: p2.mousePos.d1 + (p1.mousePos.d1 - p2.mousePos.d1) * mod
+        },
+        gameObject: {
+            transform: {
+                position: {
+                    d0: p2.gameObject.transform.position.d0 + (p1.gameObject.transform.position.d0 - p2.gameObject.transform.position.d0) * mod,
+                    d1: p2.gameObject.transform.position.d1 + (p1.gameObject.transform.position.d1 - p2.gameObject.transform.position.d1) * mod
+                },
+                rotation: {
+                    ...p1.gameObject.transform.rotation
+                }
+            },
+            rigidBody: p1.gameObject.rigidBody
+        }
+    };
+    return character;
+}
+
 let timerId = setTimeout(function tick() {
 
     const snapshots = store.getState().state.snapshots;
@@ -32,66 +56,30 @@ let timerId = setTimeout(function tick() {
             const delay = timestamp - fst.timestamp;
             const mod = frame < delay ? 1 : delay / frame;
 
-            const p1 = fst.character
-            const p2 = snd.character
-            const character = {
-                ...p1,
-                mousePos: {
-                    d0: p2.mousePos.d0 + (p1.mousePos.d0 - p2.mousePos.d0) * mod,
-                    d1: p2.mousePos.d1 + (p1.mousePos.d1 - p2.mousePos.d1) * mod
-                },
-                gameObject: {
-                    transform: {
-                        position: {
-                            d0: p2.gameObject.transform.position.d0 + (p1.gameObject.transform.position.d0 - p2.gameObject.transform.position.d0) * mod,
-                            d1: p2.gameObject.transform.position.d1 + (p1.gameObject.transform.position.d1 - p2.gameObject.transform.position.d1) * mod
-                        },
-                        rotation: {d0: 0.0, d1: 0.0}
-                    },
-                    rigidBody: {
-                        shape: {
-                            points: []
-                        }
-                    }
-                }
-            };
-            store.dispatch(actions.updateState(character));
-        }
+            // player
+            const character = interpolatePosition(fst.character, snd.character, mod);
 
-        if (fst && snd && fst.players && snd.players) { // unused
-
-            const fstGroupedById = fst.players.reduce((r, a) => {
+            // enemies
+            const enemies = [];
+            /*const fstGroupedById = fst.enemies.reduce((r, a) => {
                 r[a.sessionId] = a;
                 return r;
             }, {});
 
-            const sndGroupedById = snd.players.reduce((r, a) => {
+            const sndGroupedById = snd.enemies.reduce((r, a) => {
                 r[a.sessionId] = a;
                 return r;
             }, {});
 
-            const frame = fst.timestamp - snd.timestamp;
-            const timestamp = new Date().getTime();
-            const delay = timestamp - fst.timestamp;
-            const mod = frame < delay ? 1 : delay / frame;
-
-            const players = [];
             for (const [sessionId, value] of Object.entries(fstGroupedById)) {
                 if (sndGroupedById[sessionId]) {
                     const p1 = value
                     const p2 = sndGroupedById[sessionId]
-                    const player = {
-                        id: sessionId,
-                        username: p1.username,
-                        x: p2.mousePosX + (p1.mousePosX - p2.mousePosX) * mod,
-                        y: p2.mousePosY + (p1.mousePosY - p2.mousePosY) * mod,
-                        characterPosX: p2.characterPosX + (p1.characterPosX - p2.characterPosX) * mod,
-                        characterPosY: p2.characterPosY + (p1.characterPosY - p2.characterPosY) * mod,
-                    };
-                    players.push(player);
+                    enemies.push(interpolatePosition(p1, p2, mod));
                 }
-            }
-            store.dispatch(actions.updateState(players));
+            }*/
+
+            store.dispatch(actions.updateState(character, enemies));
         }
     }
 

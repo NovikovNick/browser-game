@@ -15,10 +15,10 @@ public class Polygon2d {
 
     public static Polygon2d rectangle() {
         return new Polygon2d(
-            new Vector2d(0, 0),
-            new Vector2d(100, 0),
-            new Vector2d(100, 100),
-            new Vector2d(0, 100)
+            new Vector2d(-50, -50),
+            new Vector2d(50, -50),
+            new Vector2d(50, 50),
+            new Vector2d(-50, 50)
         );
     }
 

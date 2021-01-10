@@ -24,6 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
+import static java.util.stream.Collectors.toList;
+
 @Service
 public class GameStateServiceImpl implements GameStateService {
 
@@ -45,11 +49,13 @@ public class GameStateServiceImpl implements GameStateService {
     @Override
     public void registerPlayer(String sessionId) {
 
+        Vector2d start = Vector2d.of(800, 200);
+
         Player player = Player.builder()
-            .mousePos(Vector2d.ZERO_VECTOR)
+            .mousePos(start)
             .gameObject(GameObject.builder()
                 .transform(Transform.builder()
-                    .position(Vector2d.ZERO_VECTOR)
+                    .position(start)
                     .rotation(Vector2d.ZERO_VECTOR)
                     .build())
                 .rigidBody(RigidBody.builder()
@@ -80,6 +86,7 @@ public class GameStateServiceImpl implements GameStateService {
 
     @Override
     public void changePlayerState(String playerId, PlayerInput input) {
+        // todo add lock
         inputs.putIfAbsent(playerId, new TreeSet<>(Comparator.comparing(PlayerInput::getTime)));
         inputs.get(playerId).add(input);
     }
@@ -94,24 +101,38 @@ public class GameStateServiceImpl implements GameStateService {
 
                 if (players.containsKey(sessionId)) {
                     Player player = players.get(sessionId);
-                    player.setMousePos(new Vector2d(req.getMousePosX(), req.getMousePosY()));
-
-                    float magnitude = SPEED * tickDelay;
+                    Vector2d mousePos = Vector2d.of(req.getMousePosX(), req.getMousePosY());
+                    player.setMousePos(mousePos);
 
                     Vector2d direction = Vector2d.ZERO_VECTOR;
-                    if (req.getIsPressedW()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1.reversed());
-                    if (req.getIsPressedS()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1);
-                    if (req.getIsPressedA()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0.reversed());
-                    if (req.getIsPressedD()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0);
+                    if (req.getIsPressedW()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0.reversed());
+                    if (req.getIsPressedS()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0);
+                    if (req.getIsPressedA()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1);
+                    if (req.getIsPressedD()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1.reversed());
+                    direction = direction.normalize();
 
+                    Transform transform = player.getGameObject().getTransform();
+                    float angleRadian = getAngleRadian(mousePos, transform.getPosition());
+                    direction = rotate(direction,  angleRadian, Vector2d.ZERO_VECTOR);
 
+                    float magnitude = SPEED * tickDelay;
+                    Vector2d force = direction.scale(magnitude);
+
+                    Vector2d center = transform.getPosition().plus(force);
+
+                    RigidBody rigidBody = player.getGameObject().getRigidBody();
+                    Polygon2d shape = rigidBody.getShape();
+                    Polygon2d transformed = new Polygon2d(shape.getPoints().stream()
+                        .map(p -> rotate(p.plus(center), angleRadian, center))
+                        .collect(toList()));
                     player.setGameObject(GameObject.builder()
                         .transform(Transform.builder()
-                            .position(player.getGameObject().getTransform().getPosition().plus(direction.scale(magnitude)))
-                            .rotation(Vector2d.ZERO_VECTOR)
+                            .position(center)
+                            .rotation(mousePos)
                             .build())
                         .rigidBody(RigidBody.builder()
-                            .shape(Polygon2d.rectangle())
+                            .shape(shape)
+                            .transformed(transformed)
                             .build())
                         .build());
                 }
@@ -133,5 +154,26 @@ public class GameStateServiceImpl implements GameStateService {
         });
 
         return snapshots;
+    }
+
+    private static float getAngleRadian(Vector2d p1, Vector2d p2) {
+        float deltaX = p2.getD0() - p1.getD0();
+        float deltaY = p2.getD1() - p1.getD1();
+        return (float) Math.atan2(deltaY, deltaX);
+    }
+
+    private static Vector2d rotate(Vector2d p, float angleRadian, Vector2d center) {
+        float cos = (float) cos(angleRadian);
+        float sin = (float) sin(angleRadian);
+
+        float x = p.getD0();
+        float y = p.getD1();
+
+        float x0 = center.getD0();
+        float y0 = center.getD1();
+
+        return new Vector2d(
+            x0 + (x - x0) * cos - (y - y0) * sin,
+            y0 + (y - y0) * cos + (x - x0) * sin);
     }
 }

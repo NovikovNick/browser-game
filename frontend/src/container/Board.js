@@ -21,7 +21,9 @@ function Grid({width, height, n}) {
     return grid;
 }
 
-function Board({character}) {
+function Board({character, enemies}) {
+
+    enemies = enemies || []
     return (
         <svg version="1.1"
              baseProfile="full"
@@ -29,28 +31,15 @@ function Board({character}) {
 
             <Grid width={2000} height={2000} n={40}/>
 
-            {
-                <g>
-
-                    <Player
-                        x={character.gameObject.transform.position.d0}
-                        y={character.gameObject.transform.position.d1}
-                    />
-
-                    <PlayerMouse
-                        x={character.mousePos.d0}
-                        y={character.mousePos.d1}
-                        name={character.username}
-                        color={"red"}
-                    />
-                </g>
-            }
+            <Player character={character} isEnemy={false} color={"blue"}/>
+            {enemies.map((item, i) => <Player key={i} character={item} isEnemy={true} color={"red"}/>)}
         </svg>
     );
 }
 
 const mapStateToProps = state => ({
-    character: state.state.character
+    character: state.state.character,
+    enemies: state.state.enemies
 });
 const mapDispatchToProps = dispatch => ({
     actions: bindActionCreators(Store, dispatch)

@@ -9,4 +9,5 @@ import lombok.Data;
 public class RigidBody {
 
     private final Polygon2d shape;
+    private final Polygon2d transformed;
 }
