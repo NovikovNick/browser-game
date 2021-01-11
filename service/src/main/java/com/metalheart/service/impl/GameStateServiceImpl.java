@@ -2,6 +2,7 @@ package com.metalheart.service.impl;
 
 import com.metalheart.model.PlayerInput;
 import com.metalheart.model.PlayerSnapshot;
+import com.metalheart.model.common.CollisionResult;
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.GameObject;
@@ -9,7 +10,9 @@ import com.metalheart.model.game.Player;
 import com.metalheart.model.game.RigidBody;
 import com.metalheart.model.game.Transform;
 import com.metalheart.model.game.Wall;
+import com.metalheart.service.CollisionDetectionService;
 import com.metalheart.service.GameStateService;
+import com.metalheart.service.GeometryUtil;
 import com.metalheart.service.UsernameService;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,10 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import static java.lang.Math.cos;
-import static java.lang.Math.sin;
-import static java.util.stream.Collectors.toList;
-
 @Service
 public class GameStateServiceImpl implements GameStateService {
 
@@ -36,11 +35,13 @@ public class GameStateServiceImpl implements GameStateService {
     private final Map<String, Set<PlayerInput>> inputs;
     private final List<Wall> walls;
 
-
     private UsernameService usernameService;
+    private CollisionDetectionService collisionService;
 
-    public GameStateServiceImpl(UsernameService usernameService) {
+    public GameStateServiceImpl(UsernameService usernameService,
+                                CollisionDetectionService collisionService) {
         this.usernameService = usernameService;
+        this.collisionService = collisionService;
         this.players = new ConcurrentHashMap<>();
         this.walls = new ArrayList<>();
         this.inputs = new ConcurrentHashMap<>();
@@ -113,19 +114,32 @@ public class GameStateServiceImpl implements GameStateService {
                     direction = direction.normalize();
 
                     Transform transform = player.getGameObject().getTransform();
-                    float angleRadian = getAngleRadian(mousePos, transform.getPosition());
-                    direction = rotate(direction,  angleRadian, Vector2d.ZERO_VECTOR);
+                    Vector2d oldCenter = transform.getPosition();
+                    float angleRadian = GeometryUtil.getAngleRadian(mousePos, oldCenter);
+                    direction = GeometryUtil.rotate(direction,  angleRadian, Vector2d.ZERO_VECTOR);
 
                     float magnitude = SPEED * tickDelay;
                     Vector2d force = direction.scale(magnitude);
 
-                    Vector2d center = transform.getPosition().plus(force);
+                    Vector2d center = oldCenter.plus(force);
 
                     RigidBody rigidBody = player.getGameObject().getRigidBody();
                     Polygon2d shape = rigidBody.getShape();
-                    Polygon2d transformed = new Polygon2d(shape.getPoints().stream()
-                        .map(p -> rotate(p.plus(center), angleRadian, center))
-                        .collect(toList()));
+                    Polygon2d transformed = GeometryUtil.rotate(shape.withOffset(center), angleRadian, center);
+
+                    for (Player other : players.values()) {
+                        if (!other.equals(player)) {
+                            Polygon2d otherTransformed = other.getGameObject().getRigidBody().getTransformed();
+                            CollisionResult collision = collisionService.detectCollision(transformed, otherTransformed);
+
+                            if (collision.isCollide()) {
+                                Vector2d normal = collision.getNormal();
+                                transformed = GeometryUtil.rotate(shape.withOffset(center), -angleRadian, center);
+                                center = center.plus(normal.reversed().scale(collision.getDepth()));
+                            }
+                        }
+                    }
+
                     player.setGameObject(GameObject.builder()
                         .transform(Transform.builder()
                             .position(center)
@@ -155,26 +169,5 @@ public class GameStateServiceImpl implements GameStateService {
         });
 
         return snapshots;
-    }
-
-    private static float getAngleRadian(Vector2d p1, Vector2d p2) {
-        float deltaX = p2.getD0() - p1.getD0();
-        float deltaY = p2.getD1() - p1.getD1();
-        return (float) Math.atan2(deltaY, deltaX);
-    }
-
-    private static Vector2d rotate(Vector2d p, float angleRadian, Vector2d center) {
-        float cos = (float) cos(angleRadian);
-        float sin = (float) sin(angleRadian);
-
-        float x = p.getD0();
-        float y = p.getD1();
-
-        float x0 = center.getD0();
-        float y0 = center.getD1();
-
-        return new Vector2d(
-            x0 + (x - x0) * cos - (y - y0) * sin,
-            y0 + (y - y0) * cos + (x - x0) * sin);
     }
 }
