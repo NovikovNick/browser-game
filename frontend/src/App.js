@@ -17,30 +17,47 @@ import Controls from "./container/Controls";
 const store = createStore(combineReducers(reducers), applyMiddleware(thunk));
 // window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
 
-function interpolateGameObject(p2, p1, mod) {
+function interpolatePoints(p1, p2, mod) {
     return {
-        transform: {
-            position: {
-                d0: p2.gameObject.transform.position.d0 + (p1.gameObject.transform.position.d0 - p2.gameObject.transform.position.d0) * mod,
-                d1: p2.gameObject.transform.position.d1 + (p1.gameObject.transform.position.d1 - p2.gameObject.transform.position.d1) * mod
-            },
-            rotation: {
-                ...p1.gameObject.transform.rotation
-            }
-        },
-        rigidBody: p1.gameObject.rigidBody
+        d0: p1.d0 + (p2.d0 - p1.d0) * mod,
+        d1: p1.d1 + (p2.d1 - p1.d1) * mod
     };
 }
 
-function interpolatePosition(p1, p2, mod) {
+function interpolateGameObject(p2, p1, mod) {
+
+    let points = [];
+    if(p1.rigidBody.transformed && p2.rigidBody.transformed) {
+        for (let i = 0; i < p1.rigidBody.transformed.points.length; i++) {
+            const p1Point = p1.rigidBody.transformed.points[i]
+            const p2Point = p2.rigidBody.transformed.points[i]
+            points.push(interpolatePoints(p2Point, p1Point, mod))
+        }
+    }
+
+
+    return {
+        transform: {
+            position: interpolatePoints(p2.transform.position, p1.transform.position, mod),
+            rotation: {
+                ...p1.transform.rotation
+            }
+        },
+        rigidBody: {
+            ...p1.rigidBody,
+            transformed: {
+                points: points
+            }
+        }
+    };
+}
+
+function interpolatePlayer(p1, p2, mod) {
 
     const character = {
         ...p1,
-        mousePos: {
-            d0: p2.mousePos.d0 + (p1.mousePos.d0 - p2.mousePos.d0) * mod,
-            d1: p2.mousePos.d1 + (p1.mousePos.d1 - p2.mousePos.d1) * mod
-        },
-        gameObject: interpolateGameObject(p2, p1, mod)
+        mousePos: interpolatePoints(p2.mousePos, p1.mousePos, mod),
+        gameObject: interpolateGameObject(p2.gameObject, p1.gameObject, mod)
     };
     return character;
 }
@@ -61,7 +78,7 @@ let timerId = setTimeout(function tick() {
             const mod = frame < delay ? 1 : delay / frame;
 
             // player
-            const character = interpolatePosition(fst.character, snd.character, mod);
+            const character = interpolatePlayer(fst.character, snd.character, mod);
 
             // enemies
             const enemies = [];
@@ -80,13 +97,13 @@ let timerId = setTimeout(function tick() {
                     if (sndGroupedById[sessionId]) {
                         const p1 = value
                         const p2 = sndGroupedById[sessionId]
-                        enemies.push(interpolatePosition(p1, p2, mod));
+                        enemies.push(interpolatePlayer(p1, p2, mod));
                     }
                 }
             }
 
             // projectiles
-            const projectiles = fst.projectiles;
+            const projectiles = [];
             {
                 const fstGroupedById = fst.projectiles.reduce((r, a) => {
                     r[a.id] = a;
@@ -97,18 +114,14 @@ let timerId = setTimeout(function tick() {
                     return r;
                 }, {});
 
-
-
                 for (const [id, value] of Object.entries(fstGroupedById)) {
                     if (sndGroupedById[id]) {
                         const p1 = value
                         const p2 = sndGroupedById[id]
 
-                        console.log(p1, p2)
-                        console.log("---")
                         projectiles.push({
                             ...p1,
-                            gameObject: interpolateGameObject(p2, p1, mod)
+                            gameObject: interpolateGameObject(p2.gameObject, p1.gameObject, mod)
                         });
                     }
                 }

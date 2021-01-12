@@ -35,7 +35,7 @@ import static java.util.stream.Collectors.toSet;
 public class GameStateServiceImpl implements GameStateService {
 
     private static final float SPEED = 0.5f;
-    private static final float BULLET_SPEED = 2f;
+    private static final float BULLET_SPEED = 1.5f;
     private final Map<String, Player> players;
     private Set<Bullet> projectiles;
     private final AtomicLong projectileSequence;
