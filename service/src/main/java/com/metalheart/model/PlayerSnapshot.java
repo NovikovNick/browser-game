@@ -1,8 +1,11 @@
 package com.metalheart.model;
 
+import com.metalheart.model.common.Polygon2d;
+import com.metalheart.model.common.Vector2d;
+import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.Player;
-import com.metalheart.model.game.Wall;
 import java.util.List;
+import java.util.Set;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,5 +16,7 @@ import lombok.EqualsAndHashCode;
 public class PlayerSnapshot {
     private Player character;
     private List<Player> enemies;
-    private List<Wall> walls;
+    private Set<Bullet> projectiles;
+    private List<Vector2d> explosions;
+    private List<Polygon2d> walls;
 }

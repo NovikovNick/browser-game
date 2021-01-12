@@ -13,15 +13,6 @@ public class Polygon2d {
 
     private final List<Vector2d> points;
 
-    public static Polygon2d rectangle() {
-        return new Polygon2d(
-            new Vector2d(-50, -50),
-            new Vector2d(50, -50),
-            new Vector2d(50, 50),
-            new Vector2d(-50, 50)
-        );
-    }
-
     public Polygon2d(List<Vector2d> points) {
         this.points = Collections.unmodifiableList(points);
     }

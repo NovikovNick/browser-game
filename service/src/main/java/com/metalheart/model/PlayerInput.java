@@ -11,6 +11,8 @@ public class PlayerInput {
     private Boolean isPressedA;
     private Boolean isPressedS;
     private Boolean isPressedD;
+    private Boolean leftBtnClicked;
+    private Boolean rightBtnClicked;
 
     private Instant time;
 }

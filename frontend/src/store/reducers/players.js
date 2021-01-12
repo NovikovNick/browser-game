@@ -20,6 +20,17 @@ const initialState = {
             }
         }
     },
+    projectiles: [
+        {
+            points: [{d0: 0.0, d1: 0.0}]
+        }
+    ],
+    explosions: [
+        {
+            timestamp: false,
+            points: []
+        }
+    ],
     enemies: [],
     walls: [],
     snapshots: []
@@ -53,7 +64,8 @@ export default function players(state = initialState, action) {
                     mousePos: action.character.mousePos,
                     gameObject: action.character.gameObject
                 },
-                enemies: action.enemies
+                enemies: action.enemies,
+                projectiles: action.projectiles
             }
         }
         case types.UPDATE_SNAPSHOTS: {

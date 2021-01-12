@@ -17,6 +17,21 @@ import Controls from "./container/Controls";
 const store = createStore(combineReducers(reducers), applyMiddleware(thunk));
 // window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
 
+function interpolateGameObject(p2, p1, mod) {
+    return {
+        transform: {
+            position: {
+                d0: p2.gameObject.transform.position.d0 + (p1.gameObject.transform.position.d0 - p2.gameObject.transform.position.d0) * mod,
+                d1: p2.gameObject.transform.position.d1 + (p1.gameObject.transform.position.d1 - p2.gameObject.transform.position.d1) * mod
+            },
+            rotation: {
+                ...p1.gameObject.transform.rotation
+            }
+        },
+        rigidBody: p1.gameObject.rigidBody
+    };
+}
+
 function interpolatePosition(p1, p2, mod) {
 
     const character = {
@@ -25,18 +40,7 @@ function interpolatePosition(p1, p2, mod) {
             d0: p2.mousePos.d0 + (p1.mousePos.d0 - p2.mousePos.d0) * mod,
             d1: p2.mousePos.d1 + (p1.mousePos.d1 - p2.mousePos.d1) * mod
         },
-        gameObject: {
-            transform: {
-                position: {
-                    d0: p2.gameObject.transform.position.d0 + (p1.gameObject.transform.position.d0 - p2.gameObject.transform.position.d0) * mod,
-                    d1: p2.gameObject.transform.position.d1 + (p1.gameObject.transform.position.d1 - p2.gameObject.transform.position.d1) * mod
-                },
-                rotation: {
-                    ...p1.gameObject.transform.rotation
-                }
-            },
-            rigidBody: p1.gameObject.rigidBody
-        }
+        gameObject: interpolateGameObject(p2, p1, mod)
     };
     return character;
 }
@@ -61,25 +65,56 @@ let timerId = setTimeout(function tick() {
 
             // enemies
             const enemies = [];
-            const fstGroupedById = fst.enemies.reduce((r, a) => {
-                r[a.sessionId] = a;
-                return r;
-            }, {});
+            {
+                const fstGroupedById = fst.enemies.reduce((r, a) => {
+                    r[a.sessionId] = a;
+                    return r;
+                }, {});
 
-            const sndGroupedById = snd.enemies.reduce((r, a) => {
-                r[a.sessionId] = a;
-                return r;
-            }, {});
+                const sndGroupedById = snd.enemies.reduce((r, a) => {
+                    r[a.sessionId] = a;
+                    return r;
+                }, {});
 
-            for (const [sessionId, value] of Object.entries(fstGroupedById)) {
-                if (sndGroupedById[sessionId]) {
-                    const p1 = value
-                    const p2 = sndGroupedById[sessionId]
-                    enemies.push(interpolatePosition(p1, p2, mod));
+                for (const [sessionId, value] of Object.entries(fstGroupedById)) {
+                    if (sndGroupedById[sessionId]) {
+                        const p1 = value
+                        const p2 = sndGroupedById[sessionId]
+                        enemies.push(interpolatePosition(p1, p2, mod));
+                    }
                 }
             }
 
-            store.dispatch(actions.updateState(character, enemies));
+            // projectiles
+            const projectiles = fst.projectiles;
+            {
+                const fstGroupedById = fst.projectiles.reduce((r, a) => {
+                    r[a.id] = a;
+                    return r;
+                }, {});
+                const sndGroupedById = snd.projectiles.reduce((r, a) => {
+                    r[a.id] = a;
+                    return r;
+                }, {});
+
+
+
+                for (const [id, value] of Object.entries(fstGroupedById)) {
+                    if (sndGroupedById[id]) {
+                        const p1 = value
+                        const p2 = sndGroupedById[id]
+
+                        console.log(p1, p2)
+                        console.log("---")
+                        projectiles.push({
+                            ...p1,
+                            gameObject: interpolateGameObject(p2, p1, mod)
+                        });
+                    }
+                }
+            }
+
+            store.dispatch(actions.updateState(character, enemies, projectiles));
         }
     }
 

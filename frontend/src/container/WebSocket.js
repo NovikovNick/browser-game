@@ -8,6 +8,8 @@ import {bindActionCreators} from 'redux';
 import * as Store from "../store/ReduxActions";
 
 const inputState = {
+    leftBtnClicked: false,
+    rightBtnClicked: false,
     mousePosX: 0,
     mousePosY: 0,
     isPressedW: false,
@@ -52,6 +54,16 @@ function onKeyUp(e) {
 };
 
 function onMouseUpdate(e) {
+
+    switch (e.which) {
+        case 1:
+            inputState.leftBtnClicked = true;
+            break;
+        case 3:
+            inputState.rightBtnClicked = true;
+            break;
+    }
+
     inputState.mousePosX = e.pageX;
     inputState.mousePosY = e.pageY;
 }
@@ -90,6 +102,9 @@ function WebSocket({host, actions}) {
                         destination: ENDPOINT.TOPIC_PLAYER_UPDATE,
                         body: JSON.stringify(inputState)
                     });
+
+                    inputState.leftBtnClicked =  inputState.rightBtnClicked = false;
+
                     timerId = setTimeout(tick, 40); // (*)
                 }, 40);
             },
@@ -98,6 +113,7 @@ function WebSocket({host, actions}) {
         });
         webSocket.activate();
 
+        document.addEventListener('mousedown', onMouseUpdate, false);
         document.addEventListener('mousemove', onMouseUpdate, false);
         document.addEventListener('mouseenter', onMouseUpdate, false);
         document.addEventListener('keypress', onKeyPress, false);
