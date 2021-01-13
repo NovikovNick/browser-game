@@ -29,22 +29,25 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 
 @Service
 public class GameStateServiceImpl implements GameStateService {
 
     private static final float SPEED = 0.5f;
-    private static final float BULLET_SPEED = 1.5f;
-    private final Map<String, Player> players;
-    private Set<Bullet> projectiles;
-    private final AtomicLong projectileSequence;
-
-    private final Map<String, Set<PlayerInput>> inputs;
+    private static final float BULLET_SPEED = 2.5f;
 
     private UsernameService usernameService;
     private CollisionDetectionService collisionService;
     private ShapeService shapeService;
+
+    private final Map<String, Player> players;
+    private final AtomicLong projectileSequence;
+    private Set<Bullet> projectiles;
+
+    private final Map<String, Set<PlayerInput>> inputs;
+
 
     public GameStateServiceImpl(UsernameService usernameService,
                                 CollisionDetectionService collisionService,
@@ -110,6 +113,8 @@ public class GameStateServiceImpl implements GameStateService {
     @Override
     public Map<String, PlayerSnapshot> calculateGameState(Integer tickDelay) {
 
+        List<Vector2d> explosions = new ArrayList<>();
+
         for (String sessionId : inputs.keySet()) {
             Set<PlayerInput> in = inputs.remove(sessionId);
             int size = in.size();
@@ -122,18 +127,10 @@ public class GameStateServiceImpl implements GameStateService {
                     player.setMousePos(mousePos);
 
                     Vector2d direction = Vector2d.ZERO_VECTOR;
-                    if (req.getIsPressedW()) {
-                        direction = direction.plus(Vector2d.UNIT_VECTOR_D0.reversed());
-                    }
-                    if (req.getIsPressedS()) {
-                        direction = direction.plus(Vector2d.UNIT_VECTOR_D0);
-                    }
-                    if (req.getIsPressedA()) {
-                        direction = direction.plus(Vector2d.UNIT_VECTOR_D1);
-                    }
-                    if (req.getIsPressedD()) {
-                        direction = direction.plus(Vector2d.UNIT_VECTOR_D1.reversed());
-                    }
+                    if (req.getIsPressedW()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0.reversed());
+                    if (req.getIsPressedS()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0);
+                    if (req.getIsPressedA()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1);
+                    if (req.getIsPressedD()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1.reversed());
                     direction = direction.normalize();
 
                     Transform transform = player.getGameObject().getTransform();
@@ -156,6 +153,7 @@ public class GameStateServiceImpl implements GameStateService {
                             CollisionResult collision = collisionService.detectCollision(transformed, otherTransformed);
 
                             if (collision.isCollide()) {
+                                explosions.add(center);
                                 Vector2d normal = collision.getNormal();
                                 transformed = GeometryUtil.rotate(shape.withOffset(center), -angleRadian, center);
                                 center = center.plus(normal.reversed().scale(collision.getDepth()));
@@ -210,9 +208,22 @@ public class GameStateServiceImpl implements GameStateService {
                 Vector2d delta = direction.scale(BULLET_SPEED * tickDelay);
                 Vector2d center = oldCenter.plus(delta);
 
-                if (center.getD0() < 0 || center.getD0() > 2000
-                    || center.getD1() < 0 || center.getD1() > 2000) {
+                if (center.getD0() < -100 || center.getD0() > 2000
+                    || center.getD1() < -100 || center.getD1() > 2000) {
                     return null;
+                }
+
+                Polygon2d transformed = GeometryUtil.rotate(shapeService.bulletBoundingBox().withOffset(center),
+                    angleRadian, center);
+
+                for (Player player : players.values()) {
+                    Polygon2d playerBox = player.getGameObject().getRigidBody().getTransformed();
+                    CollisionResult collision = collisionService.detectCollision(transformed, playerBox);
+
+                    if (collision.isCollide()) {
+                        explosions.add(center);
+                        return null;
+                    }
                 }
 
                 return Bullet.builder()
@@ -225,8 +236,7 @@ public class GameStateServiceImpl implements GameStateService {
                             .build())
                         .rigidBody(RigidBody.builder()
                             .shape(shapeService.bulletBoundingBox())
-                            .transformed(GeometryUtil.rotate(shapeService.bulletBoundingBox().withOffset(center),
-                                angleRadian, center))
+                            .transformed(transformed)
                             .build())
                         .build())
                     .build();
@@ -244,7 +254,8 @@ public class GameStateServiceImpl implements GameStateService {
                 .character(player)
                 .enemies(enemies)
                 .projectiles(projectiles)
-                .walls(Collections.emptyList())
+                .explosions(explosions)
+                .walls(asList(shapeService.wallBoundingBox().withOffset(Vector2d.of(100, 100))))
                 .build();
             snapshots.put(id, snapshot);
         });

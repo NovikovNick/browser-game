@@ -6,5 +6,7 @@ public interface ShapeService {
 
     Polygon2d playerBoundingBox();
 
+    Polygon2d wallBoundingBox();
+
     Polygon2d bulletBoundingBox();
 }

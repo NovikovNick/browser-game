@@ -25,18 +25,16 @@ const initialState = {
             points: [{d0: 0.0, d1: 0.0}]
         }
     ],
-    explosions: [
-        {
-            timestamp: false,
-            points: []
-        }
-    ],
+    explosions: [],
     enemies: [],
     walls: [],
     snapshots: []
 };
 
 export default function players(state = initialState, action) {
+
+    const now = new Date().getTime();
+
     switch (action.type) {
         case types.UPDATE_SESSION_ID: {
             return {
@@ -65,7 +63,11 @@ export default function players(state = initialState, action) {
                     gameObject: action.character.gameObject
                 },
                 enemies: action.enemies,
-                projectiles: action.projectiles
+                projectiles: action.projectiles,
+                walls: action.walls,
+                explosions: [...state.explosions]
+                    .filter(i => i && (now - i.timestamp) < 1000)
+                    .concat(action.explosions)
             }
         }
         case types.UPDATE_SNAPSHOTS: {
@@ -73,7 +75,7 @@ export default function players(state = initialState, action) {
                 ...state,
                 snapshots: [{
                     ...action.snapshot.snapshot,
-                    timestamp: new Date().getTime()
+                    timestamp: now
                 }].concat(state.snapshots.slice(0, 10))
             };
         }

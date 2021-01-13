@@ -1,11 +1,13 @@
 import * as types from './ActionTypes';
 import * as Service from "../service/service";
 
-export const updateState = (character, enemies, projectiles) => ({
+export const updateState = (character, enemies, projectiles, explosions, walls) => ({
     type: types.UPDATE_STATE,
     character: character,
     enemies: enemies,
-    projectiles: projectiles
+    projectiles: projectiles,
+    walls: walls,
+    explosions: explosions
 });
 export const addSnapshot = (snapshot) => ({type: types.UPDATE_SNAPSHOTS, snapshot : snapshot});
 export const updatePlayerData = (username) => ({type: types.UPDATE_PLAYER_DATA, username : username});

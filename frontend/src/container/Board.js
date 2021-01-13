@@ -79,23 +79,13 @@ function intersect(p1, p2, p3, p4) {
 const intersected = intersect(p1, p2, p3, p4);
 console.log(p1, p2, p3, p4, intersected)
 
-function Board({character, enemies, projectiles}) {
+function Polygon({polygon, color}) {
+    return <polygon points={polygon.points.map(p => p.d0 + "," + p.d1).join(" ")} fill={color} stroke={color} />
+}
 
-    projectiles = projectiles || []
+function Board({character, enemies, projectiles, explosions, walls}) {
 
-    const bullets = [];
-    for (let i = 0; i < projectiles.length; i++) {
-
-        if (!projectiles[i].gameObject) {
-            continue;
-        }
-
-        const points = projectiles[i].gameObject.rigidBody.transformed.points || [];
-        for (let j = 0; j < points.length; j++) {
-            bullets.push(<circle key={"b" + i + "_" + j} cx={points[j].d0} cy={points[j].d1} r="5" fill={"yellow"}/>)
-        }
-    }
-
+    const now = new Date().getTime();
     return (
         <svg version="1.1"
              baseProfile="full"
@@ -110,9 +100,9 @@ function Board({character, enemies, projectiles}) {
 
             <Player character={character} isEnemy={false} color={"blue"}/>
             {enemies.map((item, i) => <Player key={i} character={item} isEnemy={true} color={"red"}/>)}
-
-            {bullets}
-
+            {explosions.map((explosion, i) => <circle key={i} cx={explosion.point.d0} cy={explosion.point.d1} r={(now - explosion.timestamp) / 1000 * 60}  fill={"yellow"}/>)}
+            {projectiles.map((projectile, i) => projectile.gameObject && <Polygon key={i} polygon={projectiles[i].gameObject.rigidBody.transformed} color={"red"}/>)}
+            {walls.map((wall, i) => <Polygon key={i} polygon={wall} color={"black"}/>)}
         </svg>
     );
 }
@@ -120,7 +110,9 @@ function Board({character, enemies, projectiles}) {
 const mapStateToProps = state => ({
     character: state.state.character,
     enemies: state.state.enemies,
-    projectiles: state.state.projectiles
+    projectiles: state.state.projectiles,
+    explosions: state.state.explosions,
+    walls: state.state.walls
 });
 const mapDispatchToProps = dispatch => ({
     actions: bindActionCreators(Store, dispatch)

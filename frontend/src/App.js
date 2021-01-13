@@ -24,30 +24,35 @@ function interpolatePoints(p1, p2, mod) {
     };
 }
 
-function interpolateGameObject(p2, p1, mod) {
+function interpolatePolygon(p1, p2, mod) {
 
-    let points = [];
+    const points = [];
+    for (let i = 0; i < p1.points.length; i++) {
+        const p1Point = p1.points[i]
+        const p2Point = p2.points[i]
+        points.push(interpolatePoints(p2Point, p1Point, mod))
+    }
+    return {points: points}
+}
+
+function interpolateGameObject(p1, p2, mod) {
+
+    let transformed = {};
     if(p1.rigidBody.transformed && p2.rigidBody.transformed) {
-        for (let i = 0; i < p1.rigidBody.transformed.points.length; i++) {
-            const p1Point = p1.rigidBody.transformed.points[i]
-            const p2Point = p2.rigidBody.transformed.points[i]
-            points.push(interpolatePoints(p2Point, p1Point, mod))
-        }
+        transformed = interpolatePolygon(p2.rigidBody.transformed, p1.rigidBody.transformed, mod);
     }
 
 
     return {
         transform: {
-            position: interpolatePoints(p2.transform.position, p1.transform.position, mod),
+            position: interpolatePoints(p1.transform.position, p2.transform.position, mod),
             rotation: {
                 ...p1.transform.rotation
             }
         },
         rigidBody: {
             ...p1.rigidBody,
-            transformed: {
-                points: points
-            }
+            transformed: transformed
         }
     };
 }
@@ -73,8 +78,8 @@ let timerId = setTimeout(function tick() {
         if (fst && snd && fst.character && snd.character) {
 
             const frame = fst.timestamp - snd.timestamp;
-            const timestamp = new Date().getTime();
-            const delay = timestamp - fst.timestamp;
+            const now = new Date().getTime();
+            const delay = now - fst.timestamp;
             const mod = frame < delay ? 1 : delay / frame;
 
             // player
@@ -127,7 +132,15 @@ let timerId = setTimeout(function tick() {
                 }
             }
 
-            store.dispatch(actions.updateState(character, enemies, projectiles));
+            // explosions
+            const explosions = fst.explosions.map(i => {
+                return {timestamp: now, point: i}
+            })
+
+            // walls
+            const walls = fst.walls;
+
+            store.dispatch(actions.updateState(character, enemies, projectiles, explosions, walls));
         }
     }
 
