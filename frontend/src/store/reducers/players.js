@@ -4,11 +4,10 @@ const initialState = {
     character: {
         sessionId: false,
         username: "",
-        mousePos: {d0: 0.0, d1: 0.0},
         gameObject: {
             transform: {
                 position: {d0: 0.0, d1: 0.0},
-                rotation: {d0: 0.0, d1: 0.0}
+                rotationAngleRadian: 0
             },
             rigidBody: {
                 shape: {
@@ -59,7 +58,6 @@ export default function players(state = initialState, action) {
                 ...state,
                 character: {
                     ...state.character,
-                    mousePos: action.character.mousePos,
                     gameObject: action.character.gameObject
                 },
                 enemies: action.enemies,

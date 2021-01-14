@@ -1,5 +1,5 @@
 import React from "react";
-import PlayerMouse from "./PlayerMouse";
+import Polygon from "./Polygon";
 
 function Ship({isEnemy, color, center, angleDegree}) {
     return (
@@ -40,30 +40,17 @@ s-58.514,31.917-58.514,85.112v236.717l-29.257,87.771H343.771z"/>
 
 export default function Player({character, isEnemy, color}) {
 
-    const mousePos = [character.mousePos.d0, character.mousePos.d1]
     const center = [character.gameObject.transform.position.d0, character.gameObject.transform.position.d1]
-    const angleRadian = Math.atan2(mousePos[1] - center[1], mousePos[0] - center[0]);
-    const angleDegree = angleRadian * 180 / Math.PI;
+    const angleRadian = character.gameObject.transform.rotationAngleRadian;
+    const angleDegree = angleRadian * 180 / Math.PI + 180;
 
-    const debug = false;
+    const debug = true;
 
     return (
         <g>
             <Ship color={color} isEnemy={isEnemy} center={center} angleDegree={angleDegree}/>
 
-            <PlayerMouse
-                x={mousePos[0]}
-                y={mousePos[1]}
-                name={character.username}
-                color={color}
-            />
-
-            {debug && <g>
-                {character.gameObject.rigidBody.transformed.points.map((point, i) => {
-                    return (<circle key={"p" + i} cx={point.d0} cy={point.d1} r="5" fill={color}/>)
-                })}
-                <circle cx={center[0]} cy={center[1]} r="5" fill={"blue"}/>
-            </g>}
+            {debug && <Polygon polygon={character.gameObject.rigidBody.transformed} color={color} empty={true}/>}
         </g>
     );
 }

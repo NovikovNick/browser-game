@@ -26,8 +26,8 @@ public class ShapeServiceImpl implements ShapeService {
     public static final Polygon2d BULLET_BOUNDING_BOX = new Polygon2d(
         Vector2d.of(0, 0),
         Vector2d.of(0, 5),
-        Vector2d.of(100, 5),
-        Vector2d.of(100, 0)
+        Vector2d.of(10, 5),
+        Vector2d.of(10, 0)
     );
 
     @Override

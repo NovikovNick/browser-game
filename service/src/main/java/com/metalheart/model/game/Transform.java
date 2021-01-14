@@ -9,5 +9,5 @@ import lombok.Data;
 public class Transform {
 
     private final Vector2d position;
-    private final Vector2d rotation;
+    private final float rotationAngleRadian;
 }

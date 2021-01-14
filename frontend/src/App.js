@@ -45,10 +45,8 @@ function interpolateGameObject(p1, p2, mod) {
 
     return {
         transform: {
-            position: interpolatePoints(p1.transform.position, p2.transform.position, mod),
-            rotation: {
-                ...p1.transform.rotation
-            }
+            rotationAngleRadian: p1.transform.rotationAngleRadian + (p2.transform.rotationAngleRadian - p1.transform.rotationAngleRadian) * mod,
+            position: interpolatePoints(p1.transform.position, p2.transform.position, mod)
         },
         rigidBody: {
             ...p1.rigidBody,
@@ -61,7 +59,6 @@ function interpolatePlayer(p1, p2, mod) {
 
     const character = {
         ...p1,
-        mousePos: interpolatePoints(p2.mousePos, p1.mousePos, mod),
         gameObject: interpolateGameObject(p2.gameObject, p1.gameObject, mod)
     };
     return character;
@@ -138,7 +135,7 @@ let timerId = setTimeout(function tick() {
             })
 
             // walls
-            const walls = fst.walls;
+            const walls = fst.walls.map((p1, i) => interpolatePolygon(p1, snd.walls[i], mod));
 
             store.dispatch(actions.updateState(character, enemies, projectiles, explosions, walls));
         }

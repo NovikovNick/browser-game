@@ -4,8 +4,7 @@ import lombok.Data;
 
 @Data
 public class InputRequest {
-    private int mousePosX;
-    private int mousePosY;
+    private float rotationAngleRadian;
     private Boolean isPressedW;
     private Boolean isPressedA;
     private Boolean isPressedS;

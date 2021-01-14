@@ -4,6 +4,7 @@ import {bindActionCreators} from 'redux';
 
 import * as Store from "../store/ReduxActions";
 import Player from "../component/Player";
+import Polygon from "../component/Polygon";
 
 function Grid({width, height, n}) {
     const grid = [];
@@ -79,10 +80,6 @@ function intersect(p1, p2, p3, p4) {
 const intersected = intersect(p1, p2, p3, p4);
 console.log(p1, p2, p3, p4, intersected)
 
-function Polygon({polygon, color}) {
-    return <polygon points={polygon.points.map(p => p.d0 + "," + p.d1).join(" ")} fill={color} stroke={color} />
-}
-
 function Board({character, enemies, projectiles, explosions, walls}) {
 
     const now = new Date().getTime();
@@ -90,14 +87,14 @@ function Board({character, enemies, projectiles, explosions, walls}) {
         <svg version="1.1"
              baseProfile="full"
              xmlns="http://www.w3.org/2000/svg">
-
+{/*
             <Grid width={2000} height={2000} n={40}/>
 
             <Line p1={p1} p2={p2} color={"red"}/>
             <Line p1={p3} p2={p4} color={"red"}/>
 
             {intersected.intersect && <circle cx={intersected.point[0]} cy={intersected.point[1]} r={5} fill={"blue"}/>}
-
+*/}
             <Player character={character} isEnemy={false} color={"blue"}/>
             {enemies.map((item, i) => <Player key={i} character={item} isEnemy={true} color={"red"}/>)}
             {explosions.map((explosion, i) => <circle key={i} cx={explosion.point.d0} cy={explosion.point.d1} r={(now - explosion.timestamp) / 1000 * 60}  fill={"yellow"}/>)}

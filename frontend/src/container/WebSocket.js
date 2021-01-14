@@ -10,8 +10,7 @@ import * as Store from "../store/ReduxActions";
 const inputState = {
     leftBtnClicked: false,
     rightBtnClicked: false,
-    mousePosX: 0,
-    mousePosY: 0,
+    rotationAngleRadian: 0,
     isPressedW: false,
     isPressedA: false,
     isPressedS: false,
@@ -64,8 +63,7 @@ function onMouseUpdate(e) {
             break;
     }
 
-    inputState.mousePosX = e.pageX;
-    inputState.mousePosY = e.pageY;
+    inputState.rotationAngleRadian = Math.atan2(window.innerHeight / 2 - e.pageY, window.innerWidth / 2 - e.pageX);
 }
 
 const ENDPOINT = {
