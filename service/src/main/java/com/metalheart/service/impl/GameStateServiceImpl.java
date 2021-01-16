@@ -50,7 +50,6 @@ public class GameStateServiceImpl implements GameStateService {
     private Set<Bullet> projectiles;
 
     private final Map<String, Set<PlayerInput>> inputs;
-    public static final Vector2d CENTER = Vector2d.of(900, 450);
 
 
     public GameStateServiceImpl(UsernameService usernameService,
@@ -125,22 +124,19 @@ public class GameStateServiceImpl implements GameStateService {
 
                 if (players.containsKey(sessionId)) {
 
-                    Player player = players.get(sessionId);
-
                     float angleRadian = req.getRotationAngleRadian();
-
                     Vector2d direction = Vector2d.ZERO_VECTOR;
                     if (req.getIsPressedW()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0.reversed());
                     if (req.getIsPressedS()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0);
                     if (req.getIsPressedA()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1);
                     if (req.getIsPressedD()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1.reversed());
                     direction = direction.normalize();
-
-                    Transform transform = player.getGameObject().getTransform();
                     direction = GeometryUtil.rotate(direction, angleRadian, Vector2d.ZERO_VECTOR);
-
                     float magnitude = PLAYER_SPEED * tickDelay / requestCount;
                     Vector2d force = direction.scale(magnitude);
+
+                    Player player = players.get(sessionId);
+                    Transform transform = player.getGameObject().getTransform();
 
                     Vector2d oldCenter = transform.getPosition();
                     Vector2d center = oldCenter.plus(force);
@@ -251,43 +247,39 @@ public class GameStateServiceImpl implements GameStateService {
 
             Player cloned = player.clone();
 
-            Vector2d playerPosition = cloned.getGameObject().getTransform().getPosition();
-
-            Vector2d direction = playerPosition.reversed().plus(CENTER);
+            Vector2d offset = cloned.getGameObject().getTransform().getPosition().reversed();
 
             RigidBody rigidBody = cloned.getGameObject().getRigidBody();
 
             GameObject gameObject = GameObject.builder()
                 .transform(Transform.builder()
-                    .position(CENTER)
+                    .position(Vector2d.ZERO_VECTOR)
                     .rotationAngleRadian(cloned.getGameObject().getTransform().getRotationAngleRadian())
                     .build())
                 .rigidBody(RigidBody.builder()
                     .shape(rigidBody.getShape())
-                    .transformed(rigidBody.getTransformed().withOffset(direction))
+                    .transformed(rigidBody.getTransformed().withOffset(offset))
                     .build())
                 .build();
             cloned.setGameObject(gameObject);
 
             List<Player> enemies = players.values().stream()
                 .filter(enemy -> !player.equals(enemy))
-                .map(enemy -> {
-                    return Player.builder()
-                        .id(enemy.getId())
-                        .sessionId(enemy.getSessionId())
-                        .username(enemy.getUsername())
-                        .gameObject(GameObject.builder()
-                            .transform(Transform.builder()
-                                .position(enemy.getGameObject().getTransform().getPosition().plus(direction))
-                                .rotationAngleRadian(enemy.getGameObject().getTransform().getRotationAngleRadian())
-                                .build())
-                            .rigidBody(RigidBody.builder()
-                                .shape(enemy.getGameObject().getRigidBody().getShape())
-                                .transformed(enemy.getGameObject().getRigidBody().getTransformed().withOffset(direction))
-                                .build())
+                .map(enemy -> Player.builder()
+                    .id(enemy.getId())
+                    .sessionId(enemy.getSessionId())
+                    .username(enemy.getUsername())
+                    .gameObject(GameObject.builder()
+                        .transform(Transform.builder()
+                            .position(enemy.getGameObject().getTransform().getPosition().plus(offset))
+                            .rotationAngleRadian(enemy.getGameObject().getTransform().getRotationAngleRadian())
                             .build())
-                        .build();
-                })
+                        .rigidBody(RigidBody.builder()
+                            .shape(enemy.getGameObject().getRigidBody().getShape())
+                            .transformed(enemy.getGameObject().getRigidBody().getTransformed().withOffset(offset))
+                            .build())
+                        .build())
+                    .build())
                 .collect(Collectors.toList());
 
             PlayerSnapshot snapshot = PlayerSnapshot.builder()
@@ -298,17 +290,17 @@ public class GameStateServiceImpl implements GameStateService {
                     .playerId(p.getPlayerId())
                     .gameObject(GameObject.builder()
                         .transform(Transform.builder()
-                            .position(p.getGameObject().getTransform().getPosition().plus(direction))
+                            .position(p.getGameObject().getTransform().getPosition().plus(offset))
                             .rotationAngleRadian(p.getGameObject().getTransform().getRotationAngleRadian())
                             .build())
                         .rigidBody(RigidBody.builder()
                             .shape(p.getGameObject().getRigidBody().getShape())
-                            .transformed(p.getGameObject().getRigidBody().getTransformed().withOffset(direction))
+                            .transformed(p.getGameObject().getRigidBody().getTransformed().withOffset(offset))
                             .build())
                         .build())
                     .build()).collect(Collectors.toSet()))
-                .explosions(explosions.stream().map(p -> p.plus(direction)).collect(Collectors.toList()))
-                .walls(asList(shapeService.wallBoundingBox().withOffset(Vector2d.of(100, 100)).withOffset(direction)))
+                .explosions(explosions.stream().map(offset::plus).collect(Collectors.toList()))
+                .walls(asList(shapeService.wallBoundingBox().withOffset(Vector2d.of(100, 100)).withOffset(offset)))
                 .build();
             snapshots.put(id, snapshot);
         });

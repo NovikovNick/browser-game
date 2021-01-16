@@ -19,8 +19,8 @@ const store = createStore(combineReducers(reducers), applyMiddleware(thunk));
 
 function interpolatePoints(p1, p2, mod) {
     return {
-        d0: p1.d0 + (p2.d0 - p1.d0) * mod,
-        d1: p1.d1 + (p2.d1 - p1.d1) * mod
+        d0: window.innerWidth / 2  + p1.d0 + (p2.d0 - p1.d0) * mod,
+        d1: window.innerHeight / 2  + p1.d1 + (p2.d1 - p1.d1) * mod
     };
 }
 
