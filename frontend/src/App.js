@@ -17,11 +17,19 @@ import Controls from "./container/Controls";
 const store = createStore(combineReducers(reducers), applyMiddleware(thunk));
 // window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
 
-function interpolatePoints(p1, p2, mod) {
+
+function toScreenCoord(point) {
     return {
-        d0: window.innerWidth / 2  + p1.d0 + (p2.d0 - p1.d0) * mod,
-        d1: window.innerHeight / 2  + p1.d1 + (p2.d1 - p1.d1) * mod
+        d0: window.innerWidth / 2  + point.d0,
+        d1: window.innerHeight / 2  + point.d1
     };
+}
+
+function interpolatePoints(p1, p2, mod) {
+    return toScreenCoord({
+        d0: p1.d0 + (p2.d0 - p1.d0) * mod,
+        d1: p1.d1 + (p2.d1 - p1.d1) * mod
+    });
 }
 
 function interpolatePolygon(p1, p2, mod) {
@@ -131,7 +139,7 @@ let timerId = setTimeout(function tick() {
 
             // explosions
             const explosions = fst.explosions.map(i => {
-                return {timestamp: now, point: i}
+                return {timestamp: now, point: toScreenCoord(i)}
             })
 
             // walls

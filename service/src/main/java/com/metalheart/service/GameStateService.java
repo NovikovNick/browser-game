@@ -1,9 +1,6 @@
 package com.metalheart.service;
 
-import com.metalheart.model.PlayerSnapshot;
-import com.metalheart.model.PlayerInput;
-import java.util.Map;
-import java.util.UUID;
+import com.metalheart.model.State;
 
 public interface GameStateService {
 
@@ -13,7 +10,5 @@ public interface GameStateService {
 
     void unregisterPlayer(String playerId);
 
-    void changePlayerState(String playerId, PlayerInput input);
-
-    Map<String, PlayerSnapshot> calculateGameState(Integer tickDelay);
+    State calculateGameState(Integer tickDelay);
 }

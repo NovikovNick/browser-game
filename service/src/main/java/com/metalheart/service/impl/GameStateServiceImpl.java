@@ -1,7 +1,7 @@
 package com.metalheart.service.impl;
 
 import com.metalheart.model.PlayerInput;
-import com.metalheart.model.PlayerSnapshot;
+import com.metalheart.model.State;
 import com.metalheart.model.common.CollisionResult;
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
@@ -11,8 +11,10 @@ import com.metalheart.model.game.Player;
 import com.metalheart.model.game.RigidBody;
 import com.metalheart.model.game.Transform;
 import com.metalheart.service.CollisionDetectionService;
+import com.metalheart.service.GameObjectService;
 import com.metalheart.service.GameStateService;
 import com.metalheart.service.GeometryUtil;
+import com.metalheart.service.PlayerInputService;
 import com.metalheart.service.ShapeService;
 import com.metalheart.service.UsernameService;
 import java.time.Duration;
@@ -25,9 +27,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -41,30 +43,37 @@ public class GameStateServiceImpl implements GameStateService {
     private static final float BULLET_SPEED = 1.5f;
     private static final Duration BULLET_LIFETIME = Duration.ofSeconds(10);
 
-    private UsernameService usernameService;
-    private CollisionDetectionService collisionService;
-    private ShapeService shapeService;
+    private final UsernameService usernameService;
+    private final CollisionDetectionService collisionService;
+    private final ShapeService shapeService;
+    private final GameObjectService gameObjectService;
+    private final PlayerInputService playerInputService;
 
-    private final Map<String, Player> players;
     private final AtomicLong projectileSequence;
-    private Set<Bullet> projectiles;
-
-    private final Map<String, Set<PlayerInput>> inputs;
-
+    private State state;
+    private Lock lock;
 
     public GameStateServiceImpl(UsernameService usernameService,
                                 CollisionDetectionService collisionService,
-                                ShapeService shapeService) {
+                                ShapeService shapeService,
+                                GameObjectService gameObjectService,
+                                PlayerInputService playerInputService) {
 
         this.usernameService = usernameService;
         this.collisionService = collisionService;
         this.shapeService = shapeService;
-        this.players = new ConcurrentHashMap<>();
+        this.gameObjectService = gameObjectService;
+        this.playerInputService = playerInputService;
 
-        this.inputs = new ConcurrentHashMap<>();
+        this.projectileSequence = new AtomicLong();
 
-        projectileSequence = new AtomicLong();
-        this.projectiles = new TreeSet<>(Comparator.comparing(Bullet::getId));
+        this.lock = new ReentrantLock();
+        this.state = State.builder()
+            .players(new HashMap<>())
+            .projectiles(new TreeSet<>(Comparator.comparing(Bullet::getId)))
+            .explosions(new ArrayList<>())
+            .walls(asList(shapeService.wallBoundingBox()))
+            .build();
     }
 
     @Override
@@ -72,21 +81,17 @@ public class GameStateServiceImpl implements GameStateService {
 
         Player player = Player.builder()
             .id(id)
-            .gameObject(GameObject.builder()
-                .transform(Transform.builder()
-                    .position(Vector2d.ZERO_VECTOR)
-                    .rotationAngleRadian(0)
-                    .build())
-                .rigidBody(RigidBody.builder()
-                    .shape(shapeService.playerBoundingBox())
-                    .transformed(shapeService.playerBoundingBox())
-                    .build())
-                .build())
+            .gameObject(gameObjectService.newGameObject(Vector2d.ZERO_VECTOR, 0, shapeService.playerBoundingBox()))
             .sessionId(sessionId)
             .username(usernameService.generateUsername())
             .build();
 
-        players.put(sessionId, player);
+        this.lock.lock();
+        try {
+            this.state.getPlayers().put(sessionId, player);
+        } finally {
+            this.lock.unlock();
+        }
     }
 
     @Override
@@ -94,217 +99,163 @@ public class GameStateServiceImpl implements GameStateService {
 
         username = StringUtils.isEmpty(username) ? usernameService.generateUsername() : username;
 
-        Player player = players.get(playerId);
-        player.setUsername(username);
+        this.lock.lock();
+        try {
+            Player player = this.state.getPlayers().get(playerId);
+            player.setUsername(username);
+        } finally {
+            this.lock.unlock();
+        }
+
         return username;
     }
 
     @Override
     public void unregisterPlayer(String playerId) {
-        players.remove(playerId);
+        this.lock.lock();
+        try {
+            this.state.getPlayers().remove(playerId);
+        } finally {
+            this.lock.unlock();
+        }
     }
 
     @Override
-    public void changePlayerState(String playerId, PlayerInput input) {
-        // todo add lock
-        inputs.putIfAbsent(playerId, new TreeSet<>(Comparator.comparing(PlayerInput::getTime)));
-        inputs.get(playerId).add(input);
-    }
+    public  State calculateGameState(Integer tickDelay) {
 
-    @Override
-    public Map<String, PlayerSnapshot> calculateGameState(Integer tickDelay) {
+        Map<String, Set<PlayerInput>> inputs = playerInputService.pop();
 
-        List<Vector2d> explosions = new ArrayList<>();
-        Instant now = Instant.now();
+        State cloned = null;
 
-        for (String sessionId : inputs.keySet()) {
-            Set<PlayerInput> in = inputs.remove(sessionId);
-            int requestCount = in.size();
-            for (PlayerInput req : in) {
+        this.lock.lock();
+        try {
+            Instant now = Instant.now();
 
-                if (players.containsKey(sessionId)) {
+            Map<String, Player> players = this.state.getPlayers();
+            Set<Bullet> projectiles = this.state.getProjectiles();
+            List<Vector2d> explosions = new ArrayList<>();
+            List<Polygon2d> walls = this.state.getWalls();
 
-                    float angleRadian = req.getRotationAngleRadian();
-                    Vector2d direction = Vector2d.ZERO_VECTOR;
-                    if (req.getIsPressedW()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0.reversed());
-                    if (req.getIsPressedS()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0);
-                    if (req.getIsPressedA()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1);
-                    if (req.getIsPressedD()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1.reversed());
-                    direction = direction.normalize();
-                    direction = GeometryUtil.rotate(direction, angleRadian, Vector2d.ZERO_VECTOR);
-                    float magnitude = PLAYER_SPEED * tickDelay / requestCount;
-                    Vector2d force = direction.scale(magnitude);
+            for (String sessionId : inputs.keySet()) {
+                Set<PlayerInput> in = inputs.get(sessionId);
+                int requestCount = in.size();
+                for (PlayerInput req : in) {
 
-                    Player player = players.get(sessionId);
-                    Transform transform = player.getGameObject().getTransform();
+                    if (players.containsKey(sessionId)) {
 
-                    Vector2d oldCenter = transform.getPosition();
-                    Vector2d center = oldCenter.plus(force);
+                        float angleRadian = req.getRotationAngleRadian();
+                        Vector2d direction = Vector2d.ZERO_VECTOR;
+                        if (req.getIsPressedW()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0.reversed());
+                        if (req.getIsPressedS()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0);
+                        if (req.getIsPressedA()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1);
+                        if (req.getIsPressedD()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1.reversed());
+                        direction = direction.normalize();
+                        direction = GeometryUtil.rotate(direction, angleRadian, Vector2d.ZERO_VECTOR);
+                        float magnitude = PLAYER_SPEED * tickDelay / requestCount;
+                        Vector2d force = direction.scale(magnitude);
 
-                    RigidBody rigidBody = player.getGameObject().getRigidBody();
-                    Polygon2d shape = rigidBody.getShape();
-                    Polygon2d transformed = GeometryUtil.rotate(shape.withOffset(center), angleRadian, center);
+                        Player player = players.get(sessionId);
+                        Transform transform = player.getGameObject().getTransform();
 
-                    for (Player other : players.values()) {
-                        if (!other.equals(player)) {
-                            Polygon2d otherTransformed = other.getGameObject().getRigidBody().getTransformed();
-                            CollisionResult collision = collisionService.detectCollision(transformed, otherTransformed);
+                        Vector2d oldCenter = transform.getPosition();
+                        Vector2d center = oldCenter.plus(force);
 
-                            if (collision.isCollide()) {
-                                explosions.add(center);
-                                Vector2d normal = collision.getNormal();
-                                transformed = GeometryUtil.rotate(shape.withOffset(center), -angleRadian, center);
-                                center = center.plus(normal.reversed().scale(collision.getDepth()));
+                        RigidBody rigidBody = player.getGameObject().getRigidBody();
+                        Polygon2d shape = rigidBody.getShape();
+                        Polygon2d transformed = GeometryUtil.rotate(shape.withOffset(center), angleRadian, center);
+
+                        for (Player other : players.values()) {
+                            if (!other.equals(player)) {
+                                Polygon2d otherTransformed = other.getGameObject().getRigidBody().getTransformed();
+                                CollisionResult collision = collisionService.detectCollision(transformed,
+                                    otherTransformed);
+
+                                if (collision.isCollide()) {
+                                    explosions.add(center);
+                                    Vector2d normal = collision.getNormal();
+                                    transformed = GeometryUtil.rotate(shape.withOffset(center), -angleRadian, center);
+                                    center = center.plus(normal.reversed().scale(collision.getDepth()));
+                                }
                             }
                         }
-                    }
 
-                    player.setGameObject(GameObject.builder()
-                        .transform(Transform.builder()
-                            .position(center)
-                            .rotationAngleRadian(angleRadian)
-                            .build())
-                        .rigidBody(RigidBody.builder()
-                            .shape(shape)
-                            .transformed(transformed)
-                            .build())
-                        .build());
-
-                    if (req.getLeftBtnClicked()) {
-
-                        Polygon2d bullet = shapeService.bulletBoundingBox();
-
-                        projectiles.add(Bullet.builder()
-                            .id(projectileSequence.incrementAndGet())
-                            .playerId(player.getId())
-                            .createdAt(now)
-                            .gameObject(GameObject.builder()
-                                .transform(Transform.builder()
-                                    .position(center)
-                                    .rotationAngleRadian(angleRadian)
-                                    .build())
-                                .rigidBody(RigidBody.builder()
-                                    .shape(bullet)
-                                    .transformed(GeometryUtil.rotate(bullet.withOffset(center), angleRadian, center))
-                                    .build())
+                        player.setGameObject(GameObject.builder()
+                            .transform(Transform.builder()
+                                .position(center)
+                                .rotationAngleRadian(angleRadian)
+                                .build())
+                            .rigidBody(RigidBody.builder()
+                                .shape(shape)
+                                .transformed(transformed)
                                 .build())
                             .build());
+
+                        if (req.getLeftBtnClicked()) {
+
+                            projectiles.add(Bullet.builder()
+                                .id(projectileSequence.incrementAndGet())
+                                .playerId(player.getId())
+                                .createdAt(now)
+                                .gameObject(gameObjectService.newGameObject(center, angleRadian,
+                                    shapeService.bulletBoundingBox()))
+                                .build());
+                        }
                     }
                 }
             }
-        }
 
-        projectiles = projectiles.stream()
-            .map(bullet -> {
-                float angleRadian = bullet.getGameObject().getTransform().getRotationAngleRadian();
-                Vector2d oldCenter = bullet.getGameObject().getTransform().getPosition();
+            projectiles = projectiles.stream()
+                .map(bullet -> {
 
+                    float angleRadian = bullet.getGameObject().getTransform().getRotationAngleRadian();
+                    Vector2d oldCenter = bullet.getGameObject().getTransform().getPosition();
 
-                Vector2d direction = Vector2d.UNIT_VECTOR_D0.reversed();
-                direction = GeometryUtil.rotate(direction, angleRadian, Vector2d.ZERO_VECTOR);
+                    Vector2d direction = Vector2d.UNIT_VECTOR_D0.reversed();
+                    direction = GeometryUtil.rotate(direction, angleRadian, Vector2d.ZERO_VECTOR);
 
-                Vector2d delta = direction.scale(BULLET_SPEED * tickDelay);
-                Vector2d center = oldCenter.plus(delta);
+                    Vector2d delta = direction.scale(BULLET_SPEED * tickDelay);
+                    Vector2d center = oldCenter.plus(delta);
 
-                if (bullet.getCreatedAt().plus(BULLET_LIFETIME).isBefore(now)) {
-                    return null;
-                }
-
-                Polygon2d transformed = GeometryUtil.rotate(shapeService.bulletBoundingBox().withOffset(center),
-                    angleRadian, center);
-
-                for (Player player : players.values()) {
-                    Polygon2d playerBox = player.getGameObject().getRigidBody().getTransformed();
-                    CollisionResult collision = collisionService.detectCollision(transformed, playerBox);
-
-                    if (collision.isCollide()) {
-                        explosions.add(center);
+                    if (bullet.getCreatedAt().plus(BULLET_LIFETIME).isBefore(now)) {
                         return null;
                     }
-                }
 
-                return Bullet.builder()
-                    .playerId(bullet.getPlayerId())
-                    .id(bullet.getId())
-                    .createdAt(bullet.getCreatedAt())
-                    .gameObject(GameObject.builder()
-                        .transform(Transform.builder()
-                            .position(center)
-                            .rotationAngleRadian(angleRadian)
-                            .build())
-                        .rigidBody(RigidBody.builder()
-                            .shape(shapeService.bulletBoundingBox())
-                            .transformed(transformed)
-                            .build())
-                        .build())
-                    .build();
-            })
-            .filter(Objects::nonNull)
-            .collect(toSet());
+                    GameObject go = gameObjectService.newGameObject(center, angleRadian,
+                        shapeService.bulletBoundingBox());
 
-        Map<String, PlayerSnapshot> snapshots = new HashMap<>();
-        players.forEach((id, player) -> {
+                    for (Player player : players.values()) {
+                        Polygon2d playerBox = player.getGameObject().getRigidBody().getTransformed();
+                        CollisionResult collision = collisionService.detectCollision(
+                            go.getRigidBody().getTransformed(),
+                            playerBox);
 
-            Player cloned = player.clone();
+                        if (collision.isCollide()) {
+                            explosions.add(center);
+                            return null;
+                        }
+                    }
 
-            Vector2d offset = cloned.getGameObject().getTransform().getPosition().reversed();
+                    return Bullet.builder()
+                        .playerId(bullet.getPlayerId())
+                        .id(bullet.getId())
+                        .createdAt(bullet.getCreatedAt())
+                        .gameObject(go)
+                        .build();
+                })
+                .filter(Objects::nonNull)
+                .collect(toSet());
 
-            RigidBody rigidBody = cloned.getGameObject().getRigidBody();
-
-            GameObject gameObject = GameObject.builder()
-                .transform(Transform.builder()
-                    .position(Vector2d.ZERO_VECTOR)
-                    .rotationAngleRadian(cloned.getGameObject().getTransform().getRotationAngleRadian())
-                    .build())
-                .rigidBody(RigidBody.builder()
-                    .shape(rigidBody.getShape())
-                    .transformed(rigidBody.getTransformed().withOffset(offset))
-                    .build())
+            this.state = State.builder()
+                .players(players)
+                .projectiles(projectiles)
+                .explosions(explosions)
+                .walls(walls)
                 .build();
-            cloned.setGameObject(gameObject);
+            cloned = this.state.clone();
 
-            List<Player> enemies = players.values().stream()
-                .filter(enemy -> !player.equals(enemy))
-                .map(enemy -> Player.builder()
-                    .id(enemy.getId())
-                    .sessionId(enemy.getSessionId())
-                    .username(enemy.getUsername())
-                    .gameObject(GameObject.builder()
-                        .transform(Transform.builder()
-                            .position(enemy.getGameObject().getTransform().getPosition().plus(offset))
-                            .rotationAngleRadian(enemy.getGameObject().getTransform().getRotationAngleRadian())
-                            .build())
-                        .rigidBody(RigidBody.builder()
-                            .shape(enemy.getGameObject().getRigidBody().getShape())
-                            .transformed(enemy.getGameObject().getRigidBody().getTransformed().withOffset(offset))
-                            .build())
-                        .build())
-                    .build())
-                .collect(Collectors.toList());
-
-            PlayerSnapshot snapshot = PlayerSnapshot.builder()
-                .character(cloned)
-                .enemies(enemies)
-                .projectiles(projectiles.stream().map(p -> Bullet.builder()
-                    .id(p.getId())
-                    .playerId(p.getPlayerId())
-                    .gameObject(GameObject.builder()
-                        .transform(Transform.builder()
-                            .position(p.getGameObject().getTransform().getPosition().plus(offset))
-                            .rotationAngleRadian(p.getGameObject().getTransform().getRotationAngleRadian())
-                            .build())
-                        .rigidBody(RigidBody.builder()
-                            .shape(p.getGameObject().getRigidBody().getShape())
-                            .transformed(p.getGameObject().getRigidBody().getTransformed().withOffset(offset))
-                            .build())
-                        .build())
-                    .build()).collect(Collectors.toSet()))
-                .explosions(explosions.stream().map(offset::plus).collect(Collectors.toList()))
-                .walls(asList(shapeService.wallBoundingBox().withOffset(Vector2d.of(100, 100)).withOffset(offset)))
-                .build();
-            snapshots.put(id, snapshot);
-        });
-
-        return snapshots;
+        } finally {
+            this.lock.unlock();
+        }
+        return cloned;
     }
 }

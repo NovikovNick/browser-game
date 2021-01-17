@@ -17,10 +17,10 @@ public class ShapeServiceImpl implements ShapeService {
     );
 
     public static final Polygon2d WALL_BOUNDING_BOX = new Polygon2d(
-        new Vector2d(-50, -50),
-        new Vector2d(100, -50),
-        new Vector2d(100, 50),
-        new Vector2d(-50, 50)
+        new Vector2d(-10, -10),
+        new Vector2d(10, -10),
+        new Vector2d(10, 10),
+        new Vector2d(-10, 10)
     );
 
     public static final Polygon2d BULLET_BOUNDING_BOX = new Polygon2d(

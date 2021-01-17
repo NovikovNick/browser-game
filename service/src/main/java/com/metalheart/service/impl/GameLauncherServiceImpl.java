@@ -1,9 +1,12 @@
 package com.metalheart.service.impl;
 
+import com.metalheart.model.PlayerSnapshot;
+import com.metalheart.model.State;
 import com.metalheart.model.StateSnapshot;
 import com.metalheart.model.event.ServerTicEvent;
 import com.metalheart.service.GameLauncherService;
 import com.metalheart.service.GameStateService;
+import com.metalheart.service.PlayerSnapshotService;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -24,15 +27,19 @@ public class GameLauncherServiceImpl implements GameLauncherService {
 
     private ApplicationEventPublisher applicationEventPublisher;
 
-    private GameStateService stateService;
+    private final GameStateService stateService;
+    private final PlayerSnapshotService playerSnapshotService;
 
     public GameLauncherServiceImpl(ApplicationEventPublisher applicationEventPublisher,
-                                   GameStateService gameStateService) {
+                                   GameStateService gameStateService,
+                                   PlayerSnapshotService playerSnapshotService) {
+
         this.running = new AtomicBoolean();
         this.sequenceNumber = new AtomicLong();
 
         this.applicationEventPublisher = applicationEventPublisher;
         this.stateService = gameStateService;
+        this.playerSnapshotService = playerSnapshotService;
     }
 
     @Override
@@ -46,14 +53,15 @@ public class GameLauncherServiceImpl implements GameLauncherService {
                 long sequenceNumber = this.sequenceNumber.incrementAndGet();
                 long timestamp = t0.toEpochMilli();
 
-                Map<String, StateSnapshot> snapshots = stateService.calculateGameState(TICK_DELAY).entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> {
-                        return StateSnapshot.builder()
-                                .sequenceNumber(sequenceNumber)
-                                .timestamp(timestamp)
-                                .snapshot(entry.getValue())
-                                .build();
-                    }));
+                State state = stateService.calculateGameState(TICK_DELAY);
+                Map<String, PlayerSnapshot> playerSnapshots = playerSnapshotService.splitState(state);
+
+                Map<String, StateSnapshot> snapshots = playerSnapshots.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> StateSnapshot.builder()
+                        .sequenceNumber(sequenceNumber)
+                        .timestamp(timestamp)
+                        .snapshot(entry.getValue())
+                        .build()));
 
                 applicationEventPublisher.publishEvent(new ServerTicEvent(snapshots));
 
