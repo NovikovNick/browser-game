@@ -5,6 +5,7 @@ import {bindActionCreators} from 'redux';
 import * as Store from "../store/ReduxActions";
 import Player from "../component/Player";
 import Polygon from "../component/Polygon";
+import Wall from "../component/Wall";
 
 function Grid({width, height, n}) {
     const grid = [];
@@ -99,7 +100,7 @@ function Board({character, enemies, projectiles, explosions, walls}) {
             {enemies.map((item, i) => <Player key={i} character={item} isEnemy={true} color={"red"}/>)}
             {explosions.map((explosion, i) => <circle key={i} cx={explosion.point.d0} cy={explosion.point.d1} r={(now - explosion.timestamp) / 1000 * 60}  fill={"yellow"}/>)}
             {projectiles.map((projectile, i) => projectile.gameObject && <Polygon key={i} polygon={projectiles[i].gameObject.rigidBody.transformed} color={"red"}/>)}
-            {walls.map((wall, i) => <Polygon key={i} polygon={wall} color={"black"}/>)}
+            {walls.map((wall, i) => <Wall key={i} gameObject={wall}/>)}
         </svg>
     );
 }

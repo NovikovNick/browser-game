@@ -143,8 +143,26 @@ let timerId = setTimeout(function tick() {
             })
 
             // walls
-            const walls = fst.walls.map((p1, i) => interpolatePolygon(p1, snd.walls[i], mod));
+            const walls = []
+            {
+                const fstGroupedById = fst.walls.reduce((r, a) => {
+                    r[a.id] = a;
+                    return r;
+                }, {});
+                const sndGroupedById = snd.walls.reduce((r, a) => {
+                    r[a.id] = a;
+                    return r;
+                }, {});
 
+                for (const [id, value] of Object.entries(fstGroupedById)) {
+                    if (sndGroupedById[id]) {
+                        const p1 = value
+                        const p2 = sndGroupedById[id]
+
+                        walls.push(interpolateGameObject(p2, p1, mod));
+                    }
+                }
+            }
             store.dispatch(actions.updateState(character, enemies, projectiles, explosions, walls));
         }
     }

@@ -17,9 +17,11 @@ import com.metalheart.service.GeometryUtil;
 import com.metalheart.service.PlayerInputService;
 import com.metalheart.service.ShapeService;
 import com.metalheart.service.UsernameService;
+import com.metalheart.service.WallService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +35,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 
 @Service
@@ -48,6 +49,7 @@ public class GameStateServiceImpl implements GameStateService {
     private final ShapeService shapeService;
     private final GameObjectService gameObjectService;
     private final PlayerInputService playerInputService;
+    private final WallService wallService;
 
     private final AtomicLong projectileSequence;
     private State state;
@@ -57,13 +59,15 @@ public class GameStateServiceImpl implements GameStateService {
                                 CollisionDetectionService collisionService,
                                 ShapeService shapeService,
                                 GameObjectService gameObjectService,
-                                PlayerInputService playerInputService) {
+                                PlayerInputService playerInputService,
+                                WallService wallService) {
 
         this.usernameService = usernameService;
         this.collisionService = collisionService;
         this.shapeService = shapeService;
         this.gameObjectService = gameObjectService;
         this.playerInputService = playerInputService;
+        this.wallService = wallService;
 
         this.projectileSequence = new AtomicLong();
 
@@ -72,7 +76,8 @@ public class GameStateServiceImpl implements GameStateService {
             .players(new HashMap<>())
             .projectiles(new TreeSet<>(Comparator.comparing(Bullet::getId)))
             .explosions(new ArrayList<>())
-            .walls(asList(shapeService.wallBoundingBox()))
+            // .walls(this.wallService.generateWalls())
+            .walls(Collections.emptyList())
             .build();
     }
 
@@ -121,7 +126,7 @@ public class GameStateServiceImpl implements GameStateService {
     }
 
     @Override
-    public  State calculateGameState(Integer tickDelay) {
+    public State calculateGameState(Integer tickDelay) {
 
         Map<String, Set<PlayerInput>> inputs = playerInputService.pop();
 
@@ -134,7 +139,7 @@ public class GameStateServiceImpl implements GameStateService {
             Map<String, Player> players = this.state.getPlayers();
             Set<Bullet> projectiles = this.state.getProjectiles();
             List<Vector2d> explosions = new ArrayList<>();
-            List<Polygon2d> walls = this.state.getWalls();
+            List<GameObject> walls = this.state.getWalls();
 
             for (String sessionId : inputs.keySet()) {
                 Set<PlayerInput> in = inputs.get(sessionId);
@@ -176,6 +181,18 @@ public class GameStateServiceImpl implements GameStateService {
                                     transformed = GeometryUtil.rotate(shape.withOffset(center), -angleRadian, center);
                                     center = center.plus(normal.reversed().scale(collision.getDepth()));
                                 }
+                            }
+                        }
+
+                        for (GameObject wall : walls) {
+                            Polygon2d otherTransformed = wall.getRigidBody().getTransformed();
+                            CollisionResult collision = collisionService.detectCollision(transformed,
+                                otherTransformed);
+
+                            if (collision.isCollide()) {
+                                Vector2d normal = collision.getNormal();
+                                transformed = GeometryUtil.rotate(shape.withOffset(center), -angleRadian, center);
+                                center = center.plus(normal.reversed().scale(collision.getDepth()));
                             }
                         }
 
@@ -231,6 +248,16 @@ public class GameStateServiceImpl implements GameStateService {
 
                         if (collision.isCollide()) {
                             explosions.add(center);
+                            return null;
+                        }
+                    }
+                    for (GameObject wall : walls) {
+                        Polygon2d otherTransformed = wall.getRigidBody().getTransformed();
+                        CollisionResult collision = collisionService.detectCollision(
+                            go.getRigidBody().getTransformed(),
+                            otherTransformed);
+
+                        if (collision.isCollide()) {
                             return null;
                         }
                     }
