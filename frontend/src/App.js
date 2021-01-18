@@ -20,8 +20,8 @@ const store = createStore(combineReducers(reducers), applyMiddleware(thunk));
 
 function toScreenCoord(point) {
     return {
-        d0: window.innerWidth / 2  + point.d0,
-        d1: window.innerHeight / 2  + point.d1
+        d0:point.d0,
+        d1:point.d1
     };
 }
 

@@ -2,12 +2,11 @@ package com.metalheart.service.impl;
 
 import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.State;
+import com.metalheart.model.common.BoundingBox2d;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
-import com.metalheart.model.game.RigidBody;
-import com.metalheart.model.game.Transform;
 import com.metalheart.service.GameObjectService;
 import com.metalheart.service.PlayerSnapshotService;
 import java.util.HashMap;
@@ -21,6 +20,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
+
+    private BoundingBox2d SCREEN = BoundingBox2d.of(Vector2d.ZERO_VECTOR, Vector2d.ZERO_VECTOR);
 
     private final GameObjectService gameObjectService;
     private Lock lock;
@@ -45,18 +46,9 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
             players.forEach((id, player) -> {
 
                 Player cloned = player.clone();
-                Vector2d offset = cloned.getGameObject().getTransform().getPosition().reversed();
+                Vector2d offset = SCREEN.getCenter().reversed();
 
-                cloned.setGameObject(GameObject.builder()
-                    .transform(Transform.builder()
-                        .position(Vector2d.ZERO_VECTOR)
-                        .rotationAngleRadian(cloned.getGameObject().getTransform().getRotationAngleRadian())
-                        .build())
-                    .rigidBody(RigidBody.builder()
-                        .shape(cloned.getGameObject().getRigidBody().getShape())
-                        .transformed(cloned.getGameObject().getRigidBody().getTransformed().withOffset(offset))
-                        .build())
-                    .build());
+                cloned.setGameObject(gameObjectService.withOrigin(offset, cloned.getGameObject()));
 
                 List<Player> enemies = players.values().stream()
                     .filter(enemy -> !player.equals(enemy))

@@ -31,17 +31,17 @@ public class ShapeServiceImpl implements ShapeService {
     );
 
     @Override
-    public Polygon2d playerBoundingBox() {
+    public Polygon2d playerShape() {
         return PLAYER_BOUNDING_BOX;
     }
 
     @Override
-    public Polygon2d wallBoundingBox() {
+    public Polygon2d wallShape() {
         return WALL_BOUNDING_BOX;
     }
 
     @Override
-    public Polygon2d bulletBoundingBox() {
+    public Polygon2d bulletShape() {
         return BULLET_BOUNDING_BOX;
     }
 }

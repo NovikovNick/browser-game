@@ -21,7 +21,6 @@ import com.metalheart.service.WallService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 
 @Service
@@ -76,8 +76,10 @@ public class GameStateServiceImpl implements GameStateService {
             .players(new HashMap<>())
             .projectiles(new TreeSet<>(Comparator.comparing(Bullet::getId)))
             .explosions(new ArrayList<>())
-            // .walls(this.wallService.generateWalls())
-            .walls(Collections.emptyList())
+            //.walls(this.wallService.generateWalls())
+            .walls(asList(
+                gameObjectService.newGameObject(Vector2d.ZERO_VECTOR, 0, shapeService.wallShape())
+            ))
             .build();
     }
 
@@ -86,7 +88,7 @@ public class GameStateServiceImpl implements GameStateService {
 
         Player player = Player.builder()
             .id(id)
-            .gameObject(gameObjectService.newGameObject(Vector2d.ZERO_VECTOR, 0, shapeService.playerBoundingBox()))
+            .gameObject(gameObjectService.newGameObject(Vector2d.ZERO_VECTOR, 0, shapeService.playerShape()))
             .sessionId(sessionId)
             .username(usernameService.generateUsername())
             .build();
@@ -214,7 +216,7 @@ public class GameStateServiceImpl implements GameStateService {
                                 .playerId(player.getId())
                                 .createdAt(now)
                                 .gameObject(gameObjectService.newGameObject(center, angleRadian,
-                                    shapeService.bulletBoundingBox()))
+                                    shapeService.bulletShape()))
                                 .build());
                         }
                     }
@@ -238,7 +240,7 @@ public class GameStateServiceImpl implements GameStateService {
                     }
 
                     GameObject go = gameObjectService.newGameObject(center, angleRadian,
-                        shapeService.bulletBoundingBox());
+                        shapeService.bulletShape());
 
                     for (Player player : players.values()) {
                         Polygon2d playerBox = player.getGameObject().getRigidBody().getTransformed();

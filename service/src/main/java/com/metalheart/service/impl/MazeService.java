@@ -51,7 +51,7 @@ public class MazeService implements WallService {
                         point.getD0() * 400 +  x * 100,
                         point.getD1() * -400 +  y * 100),
                         0,
-                        shapeService.wallBoundingBox());
+                        shapeService.wallShape());
 
                     if ((x == 0 || x == 3) && (y == 0 || y == 3)) {
                         walls.add(go);
