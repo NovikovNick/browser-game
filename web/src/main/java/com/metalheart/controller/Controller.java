@@ -2,7 +2,7 @@ package com.metalheart.controller;
 
 import com.metalheart.model.ChangePlayerNameRequest;
 import com.metalheart.model.ChangePlayerNameResponse;
-import com.metalheart.service.GameStateService;
+import com.metalheart.service.state.GameStateService;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

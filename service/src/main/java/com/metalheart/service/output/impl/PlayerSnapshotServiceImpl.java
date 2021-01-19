@@ -1,4 +1,4 @@
-package com.metalheart.service.impl;
+package com.metalheart.service.output.impl;
 
 import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.State;
@@ -7,8 +7,8 @@ import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
-import com.metalheart.service.GameObjectService;
-import com.metalheart.service.PlayerSnapshotService;
+import com.metalheart.service.state.GameObjectService;
+import com.metalheart.service.output.PlayerSnapshotService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

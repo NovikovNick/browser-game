@@ -1,4 +1,4 @@
-package com.metalheart.service.impl;
+package com.metalheart.service.state.impl;
 
 import com.metalheart.model.PlayerInput;
 import com.metalheart.model.State;
@@ -10,14 +10,14 @@ import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.model.game.RigidBody;
 import com.metalheart.model.game.Transform;
-import com.metalheart.service.CollisionDetectionService;
-import com.metalheart.service.GameObjectService;
-import com.metalheart.service.GameStateService;
+import com.metalheart.service.state.CollisionDetectionService;
+import com.metalheart.service.state.GameObjectService;
+import com.metalheart.service.state.GameStateService;
 import com.metalheart.service.GeometryUtil;
-import com.metalheart.service.PlayerInputService;
-import com.metalheart.service.ShapeService;
-import com.metalheart.service.UsernameService;
-import com.metalheart.service.WallService;
+import com.metalheart.service.input.PlayerInputService;
+import com.metalheart.service.state.ShapeService;
+import com.metalheart.service.state.UsernameService;
+import com.metalheart.service.state.WallService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -130,7 +130,7 @@ public class GameStateServiceImpl implements GameStateService {
     @Override
     public State calculateGameState(Integer tickDelay) {
 
-        Map<String, Set<PlayerInput>> inputs = playerInputService.pop();
+        Map<String, List<PlayerInput>> inputs = playerInputService.pop();
 
         State cloned = null;
 
@@ -144,7 +144,7 @@ public class GameStateServiceImpl implements GameStateService {
             List<GameObject> walls = this.state.getWalls();
 
             for (String sessionId : inputs.keySet()) {
-                Set<PlayerInput> in = inputs.get(sessionId);
+                List<PlayerInput> in = inputs.get(sessionId);
                 int requestCount = in.size();
                 for (PlayerInput req : in) {
 

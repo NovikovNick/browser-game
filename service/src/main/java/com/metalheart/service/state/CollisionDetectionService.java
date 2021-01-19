@@ -1,4 +1,4 @@
-package com.metalheart.service;
+package com.metalheart.service.state;
 
 import com.metalheart.model.common.CollisionResult;
 import com.metalheart.model.common.Line;

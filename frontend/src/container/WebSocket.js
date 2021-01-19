@@ -8,6 +8,7 @@ import {bindActionCreators} from 'redux';
 import * as Store from "../store/ReduxActions";
 
 const inputState = {
+    ackSN: null,
     leftBtnClicked: false,
     rightBtnClicked: false,
     rotationAngleRadian: 0,
@@ -52,6 +53,9 @@ function onKeyUp(e) {
     }
 };
 
+inputState.leftBtnClicked =  inputState.rightBtnClicked = false;
+
+
 function onMouseUpdate(e) {
 
     switch (e.which) {
@@ -90,8 +94,9 @@ function WebSocket({host, actions}) {
                 actions.changePlayerName({sessionId: sessionId})
 
                 webSocket.subscribe(ENDPOINT.TOPIC_PLAYER_LIST + sessionId, message => {
-                    const state = JSON.parse(message.body);
-                    actions.addSnapshot(state);
+                    const serverSnapshot = JSON.parse(message.body);
+                    inputState.ackSN = serverSnapshot.sequenceNumber;
+                    actions.addSnapshot(serverSnapshot);
                 });
 
                 let timerId = setTimeout(function tick() {
@@ -100,8 +105,6 @@ function WebSocket({host, actions}) {
                         destination: ENDPOINT.TOPIC_PLAYER_UPDATE,
                         body: JSON.stringify(inputState)
                     });
-
-                    inputState.leftBtnClicked =  inputState.rightBtnClicked = false;
 
                     timerId = setTimeout(tick, 40); // (*)
                 }, 40);
@@ -114,6 +117,15 @@ function WebSocket({host, actions}) {
         document.addEventListener('mousedown', onMouseUpdate, false);
         document.addEventListener('mousemove', onMouseUpdate, false);
         document.addEventListener('mouseenter', onMouseUpdate, false);
+        document.addEventListener('mousedown', e => {
+            if (e.which == 1) inputState.leftBtnClicked = true;
+            if (e.which == 3) inputState.rightBtnClicked = true;
+        });
+        document.addEventListener('mouseup', e => {
+            inputState.leftBtnClicked = inputState.rightBtnClicked = false;
+        });
+
+
         document.addEventListener('keypress', onKeyPress, false);
         document.addEventListener('keyup', onKeyUp, false);
     })

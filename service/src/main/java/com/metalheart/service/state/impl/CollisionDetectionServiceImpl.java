@@ -1,10 +1,10 @@
-package com.metalheart.service.impl;
+package com.metalheart.service.state.impl;
 
 import com.metalheart.model.common.CollisionResult;
 import com.metalheart.model.common.Line;
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.service.CollisionDetectionService;
+import com.metalheart.service.state.CollisionDetectionService;
 import com.metalheart.service.GeometryUtil;
 import java.util.List;
 import org.springframework.stereotype.Service;

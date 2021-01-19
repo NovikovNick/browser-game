@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public class PlayerInput {
+    private Long ackSN;
     private float rotationAngleRadian;
     private Boolean isPressedW;
     private Boolean isPressedA;

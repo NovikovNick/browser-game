@@ -1,13 +1,13 @@
-package com.metalheart.service.impl;
+package com.metalheart.service.state.impl;
 
 import com.metalheart.maze.Maze;
 import com.metalheart.maze.MazeDoorDirection;
 import com.metalheart.maze.RecursiveBacktrackerMazeBuilder;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.GameObject;
-import com.metalheart.service.GameObjectService;
-import com.metalheart.service.ShapeService;
-import com.metalheart.service.WallService;
+import com.metalheart.service.state.GameObjectService;
+import com.metalheart.service.state.ShapeService;
+import com.metalheart.service.state.WallService;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;

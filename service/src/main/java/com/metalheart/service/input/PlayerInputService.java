@@ -1,12 +1,12 @@
-package com.metalheart.service;
+package com.metalheart.service.input;
 
 import com.metalheart.model.PlayerInput;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public interface PlayerInputService {
 
     void add(String playerId, PlayerInput input);
 
-    Map<String, Set<PlayerInput>> pop();
+    Map<String, List<PlayerInput>> pop();
 }

@@ -1,6 +1,6 @@
-package com.metalheart.service.impl;
+package com.metalheart.service.state.impl;
 
-import com.metalheart.service.UsernameService;
+import com.metalheart.service.state.UsernameService;
 import java.util.Random;
 import org.springframework.stereotype.Service;
 

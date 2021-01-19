@@ -1,4 +1,4 @@
-package com.metalheart.service;
+package com.metalheart.service.state;
 
 public interface UsernameService {
 

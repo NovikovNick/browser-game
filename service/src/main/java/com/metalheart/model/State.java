@@ -14,6 +14,8 @@ import lombok.Data;
 @Data
 @Builder
 public class State implements Cloneable {
+
+    private Map<String, Long> playersAckSN;
     private Map<String, Player> players;
     private Set<Bullet> projectiles;
     private List<Vector2d> explosions;

@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class InputRequest {
+    private Long ackSN;
     private float rotationAngleRadian;
     private Boolean isPressedW;
     private Boolean isPressedA;

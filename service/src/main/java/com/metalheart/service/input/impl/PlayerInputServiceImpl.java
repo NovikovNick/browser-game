@@ -1,12 +1,11 @@
-package com.metalheart.service.impl;
+package com.metalheart.service.input.impl;
 
 import com.metalheart.model.PlayerInput;
-import com.metalheart.service.PlayerInputService;
-import java.util.Comparator;
+import com.metalheart.model.struct.LimitedList;
+import com.metalheart.service.input.PlayerInputService;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -17,7 +16,7 @@ public class PlayerInputServiceImpl implements PlayerInputService {
 
     private static final int MAX_INPUT = 10;
 
-    private final Map<String, TreeSet<PlayerInput>> inputs;
+    private final Map<String, LimitedList<PlayerInput>> inputs;
     private final Lock lock;
 
     public PlayerInputServiceImpl() {
@@ -29,27 +28,20 @@ public class PlayerInputServiceImpl implements PlayerInputService {
     public void add(String playerId, PlayerInput input) {
         lock.lock();
         try {
-            inputs.putIfAbsent(playerId, new TreeSet<>(Comparator.comparing(PlayerInput::getTime)));
-            TreeSet<PlayerInput> playerInputs = inputs.get(playerId);
-
-            if (playerInputs.size() > MAX_INPUT) {
-                playerInputs.pollFirst();
-            }
-
-            playerInputs.add(input);
-
+            inputs.putIfAbsent(playerId, new LimitedList<>(MAX_INPUT));
+            inputs.get(playerId).add(input);
         } finally {
             lock.unlock();
         }
     }
 
     @Override
-    public Map<String, Set<PlayerInput>> pop() {
+    public Map<String, List<PlayerInput>> pop() {
 
-        HashMap<String, Set<PlayerInput>> res;
+        HashMap<String, List<PlayerInput>> res = new HashMap<>();
         lock.lock();
         try{
-            res = new HashMap<>(inputs);
+            inputs.forEach((sessionId, snapshots) -> res.put(sessionId, snapshots.pollAll()));
             inputs.clear();
         } finally {
             lock.unlock();

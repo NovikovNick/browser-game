@@ -3,7 +3,7 @@ package com.metalheart.controller;
 import com.metalheart.model.Constant;
 import com.metalheart.model.InputRequest;
 import com.metalheart.model.PlayerInput;
-import com.metalheart.service.PlayerInputService;
+import com.metalheart.service.input.PlayerInputService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.convert.ConversionService;

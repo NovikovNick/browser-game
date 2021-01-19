@@ -1,8 +1,8 @@
-package com.metalheart.service.impl;
+package com.metalheart.service.state.impl;
 
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.service.ShapeService;
+import com.metalheart.service.state.ShapeService;
 import org.springframework.stereotype.Service;
 
 @Service

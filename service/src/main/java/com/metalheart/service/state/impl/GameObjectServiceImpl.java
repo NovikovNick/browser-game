@@ -1,11 +1,11 @@
-package com.metalheart.service.impl;
+package com.metalheart.service.state.impl;
 
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.RigidBody;
 import com.metalheart.model.game.Transform;
-import com.metalheart.service.GameObjectService;
+import com.metalheart.service.state.GameObjectService;
 import com.metalheart.service.GeometryUtil;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
