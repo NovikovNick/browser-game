@@ -8,6 +8,7 @@ import com.metalheart.service.output.OutputService;
 import com.metalheart.service.output.PlayerSnapshotDeltaService;
 import com.metalheart.service.output.PlayerSnapshotService;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,7 @@ public class OutputServiceImpl implements OutputService {
 
     private final PlayerSnapshotService playerSnapshotService;
     private final PlayerSnapshotDeltaService deltaService;
-    private Map<String, LimitedList<PlayerSnapshot>> snapshots;
+    private Map<String, LimitedList<StateSnapshot>> snapshots;
 
     public OutputServiceImpl(PlayerSnapshotService playerSnapshotService,
                              PlayerSnapshotDeltaService deltaService) {
@@ -42,28 +43,44 @@ public class OutputServiceImpl implements OutputService {
 
         long timestamp = Instant.now().toEpochMilli();
         long sequenceNumber = this.sequenceNumber.incrementAndGet();
-
+        Map<String, Long> ackSN = state.getPlayersAckSN();
         Map<String, PlayerSnapshot> playerToSnapshots = playerSnapshotService.splitState(state);
         Map<String, StateSnapshot> res = new HashMap<>();
 
         lock.lock();
         try {
             playerToSnapshots.forEach((sessionId, snapshot) -> {
+
                 snapshots.putIfAbsent(sessionId, new LimitedList<>(PLAYER_SNAPSHOT_SIZE));
-                LimitedList<PlayerSnapshot> playerSnapshots = snapshots.get(sessionId);
-                playerSnapshots.add(snapshot);
-
-                PlayerSnapshot playerSnapshot = null;
-                List<PlayerSnapshot> list = playerSnapshots.toList();
-                for (PlayerSnapshot s1 : list) {
-                    playerSnapshot = deltaService.calculateDelta(s1, playerSnapshot);
-                }
-
-                res.put(sessionId, StateSnapshot.builder()
+                LimitedList<StateSnapshot> playerStates = snapshots.get(sessionId);
+                playerStates.add(StateSnapshot.builder()
                     .sequenceNumber(sequenceNumber)
                     .timestamp(timestamp)
                     .snapshot(snapshot)
                     .build());
+
+                Long ack = ackSN.get(sessionId);
+                if (ack != null) {
+                    playerStates.pollAll()
+                        .stream()
+                        .filter(s -> s.getSequenceNumber() > ack)
+                        .sorted(Comparator.comparingLong(StateSnapshot::getSequenceNumber).reversed())
+                        .forEach(playerStates::add);
+                }
+
+                List<StateSnapshot> list = playerStates.toList();
+
+                PlayerSnapshot playerSnapshot = null;
+                for (StateSnapshot previous : list) {
+                    playerSnapshot = deltaService.calculateDelta(previous.getSnapshot(), playerSnapshot);
+                }
+
+                StateSnapshot stateSnapshot = StateSnapshot.builder()
+                    .sequenceNumber(sequenceNumber)
+                    .timestamp(timestamp)
+                    .snapshot(playerSnapshot)
+                    .build();
+                res.put(sessionId, stateSnapshot);
             });
 
         } finally {

@@ -4,5 +4,5 @@ import com.metalheart.model.PlayerSnapshot;
 
 public interface PlayerSnapshotDeltaService {
 
-    PlayerSnapshot calculateDelta(PlayerSnapshot s1, PlayerSnapshot s2);
+    PlayerSnapshot calculateDelta(PlayerSnapshot previous, PlayerSnapshot next);
 }

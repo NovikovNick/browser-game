@@ -24,6 +24,7 @@ public class State implements Cloneable {
     @Override
     public State clone() {
         return State.builder()
+            .playersAckSN(new HashMap<>(playersAckSN))
             .players(new HashMap<>(this.getPlayers()))
             .projectiles(this.getProjectiles())
             .explosions(this.getExplosions())

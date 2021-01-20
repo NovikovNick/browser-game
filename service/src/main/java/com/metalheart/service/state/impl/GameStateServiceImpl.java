@@ -73,13 +73,11 @@ public class GameStateServiceImpl implements GameStateService {
 
         this.lock = new ReentrantLock();
         this.state = State.builder()
+            .playersAckSN(new HashMap<>())
             .players(new HashMap<>())
             .projectiles(new TreeSet<>(Comparator.comparing(Bullet::getId)))
             .explosions(new ArrayList<>())
-            //.walls(this.wallService.generateWalls())
-            .walls(asList(
-                gameObjectService.newGameObject(Vector2d.ZERO_VECTOR, 0, shapeService.wallShape())
-            ))
+            .walls(this.wallService.generateWalls())
             .build();
     }
 
@@ -142,11 +140,17 @@ public class GameStateServiceImpl implements GameStateService {
             Set<Bullet> projectiles = this.state.getProjectiles();
             List<Vector2d> explosions = new ArrayList<>();
             List<GameObject> walls = this.state.getWalls();
+            Map<String, Long> ackSN = this.state.getPlayersAckSN();
 
             for (String sessionId : inputs.keySet()) {
                 List<PlayerInput> in = inputs.get(sessionId);
                 int requestCount = in.size();
                 for (PlayerInput req : in) {
+
+                    ackSN.merge(sessionId, 0l,
+                        (old, v) -> old != null &&  req.getAckSN() != null && old > req.getAckSN()
+                            ? old
+                            : req.getAckSN());
 
                     if (players.containsKey(sessionId)) {
 
@@ -275,6 +279,7 @@ public class GameStateServiceImpl implements GameStateService {
                 .collect(toSet());
 
             this.state = State.builder()
+                .playersAckSN(ackSN)
                 .players(players)
                 .projectiles(projectiles)
                 .explosions(explosions)
