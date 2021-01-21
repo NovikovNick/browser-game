@@ -143,8 +143,8 @@ let timerId = setTimeout(function tick() {
             })
 
             // walls
-            const walls = []
-            {
+            const walls = fst.walls
+            /*{
                 const fstGroupedById = fst.walls.reduce((r, a) => {
                     r[a.id] = a;
                     return r;
@@ -162,7 +162,8 @@ let timerId = setTimeout(function tick() {
                         walls.push(interpolateGameObject(p2, p1, mod));
                     }
                 }
-            }
+            }*/
+
             store.dispatch(actions.updateState(character, enemies, projectiles, explosions, walls));
         }
     }

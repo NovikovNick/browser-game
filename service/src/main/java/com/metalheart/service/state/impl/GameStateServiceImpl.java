@@ -10,16 +10,17 @@ import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.model.game.RigidBody;
 import com.metalheart.model.game.Transform;
+import com.metalheart.service.GeometryUtil;
+import com.metalheart.service.input.PlayerInputService;
 import com.metalheart.service.state.CollisionDetectionService;
 import com.metalheart.service.state.GameObjectService;
 import com.metalheart.service.state.GameStateService;
-import com.metalheart.service.GeometryUtil;
-import com.metalheart.service.input.PlayerInputService;
 import com.metalheart.service.state.ShapeService;
 import com.metalheart.service.state.UsernameService;
 import com.metalheart.service.state.WallService;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -34,7 +35,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 
 @Service
@@ -139,7 +139,9 @@ public class GameStateServiceImpl implements GameStateService {
             Map<String, Player> players = this.state.getPlayers();
             Set<Bullet> projectiles = this.state.getProjectiles();
             List<Vector2d> explosions = new ArrayList<>();
-            List<GameObject> walls = this.state.getWalls();
+            List<GameObject> walls = LocalDateTime.now().getSecond() % 10 == 0
+                ? wallService.generateWalls()
+                : this.state.getWalls();
             Map<String, Long> ackSN = this.state.getPlayersAckSN();
 
             for (String sessionId : inputs.keySet()) {
@@ -278,8 +280,16 @@ public class GameStateServiceImpl implements GameStateService {
                 .filter(Objects::nonNull)
                 .collect(toSet());
 
+
+
+            Map<String, Long> ack = new HashMap<>();
+            ackSN.forEach((sessionId, n) -> {
+                if (players.keySet().contains(sessionId)) {
+                    ack.put(sessionId, n);
+                }
+            });
             this.state = State.builder()
-                .playersAckSN(ackSN)
+                .playersAckSN(ack)
                 .players(players)
                 .projectiles(projectiles)
                 .explosions(explosions)

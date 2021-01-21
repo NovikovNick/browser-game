@@ -15,6 +15,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import lombok.Builder;
+import lombok.Data;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,7 +30,7 @@ public class OutputServiceImpl implements OutputService {
 
     private final PlayerSnapshotService playerSnapshotService;
     private final PlayerSnapshotDeltaService deltaService;
-    private Map<String, LimitedList<StateSnapshot>> snapshots;
+    private Map<String, LimitedList<Snapshot>> snapshots;
 
     public OutputServiceImpl(PlayerSnapshotService playerSnapshotService,
                              PlayerSnapshotDeltaService deltaService) {
@@ -52,33 +55,44 @@ public class OutputServiceImpl implements OutputService {
             playerToSnapshots.forEach((sessionId, snapshot) -> {
 
                 snapshots.putIfAbsent(sessionId, new LimitedList<>(PLAYER_SNAPSHOT_SIZE));
-                LimitedList<StateSnapshot> playerStates = snapshots.get(sessionId);
-                playerStates.add(StateSnapshot.builder()
+                LimitedList<Snapshot> playerStates = snapshots.get(sessionId);
+                playerStates.add(Snapshot.builder()
                     .sequenceNumber(sequenceNumber)
-                    .timestamp(timestamp)
+                    .ack(false)
                     .snapshot(snapshot)
                     .build());
 
                 Long ack = ackSN.get(sessionId);
+
+                Snapshot ackSnapshot = null;
                 if (ack != null) {
-                    playerStates.pollAll()
+
+                    List<Snapshot> sentSnapshots = playerStates.pollAll()
                         .stream()
-                        .filter(s -> s.getSequenceNumber() > ack)
-                        .sorted(Comparator.comparingLong(StateSnapshot::getSequenceNumber).reversed())
-                        .forEach(playerStates::add);
-                }
+                        .sorted(Comparator.comparingLong(Snapshot::getSequenceNumber).reversed())
+                        .collect(Collectors.toList());
+                    for (Snapshot sentSnapshot : sentSnapshots) {
 
-                List<StateSnapshot> list = playerStates.toList();
-
-                PlayerSnapshot playerSnapshot = null;
-                for (StateSnapshot previous : list) {
-                    playerSnapshot = deltaService.calculateDelta(previous.getSnapshot(), playerSnapshot);
+                        if (sentSnapshot.getSequenceNumber() <= ack) {
+                            sentSnapshot.setAck(true);
+                            if (ackSnapshot == null || (sentSnapshot.getSequenceNumber() > ackSnapshot.getSequenceNumber())) {
+                                ackSnapshot = sentSnapshot;
+                            }
+                        } else {
+                            playerStates.add(sentSnapshot);
+                        }
+                    }
                 }
+                playerStates.add(ackSnapshot);
+
+                PlayerSnapshot delta = deltaService.calculateDelta(
+                    ackSnapshot == null ? null : ackSnapshot.getSnapshot(),
+                    playerStates.toList().stream().map(Snapshot::getSnapshot).collect(Collectors.toList()));
 
                 StateSnapshot stateSnapshot = StateSnapshot.builder()
                     .sequenceNumber(sequenceNumber)
                     .timestamp(timestamp)
-                    .snapshot(playerSnapshot)
+                    .snapshot(delta)
                     .build();
                 res.put(sessionId, stateSnapshot);
             });
@@ -88,5 +102,19 @@ public class OutputServiceImpl implements OutputService {
         }
 
         return res;
+    }
+
+    @Data
+    @Builder
+    public static class Snapshot {
+
+        private long sequenceNumber;
+        private boolean ack;
+        private PlayerSnapshot snapshot;
+
+        @Override
+        public String toString() {
+            return (ack ? "+" : "-") + "[sn=" + sequenceNumber + "]";
+        }
     }
 }

@@ -4,7 +4,9 @@ import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.game.GameObject;
 import com.metalheart.service.output.PlayerSnapshotDeltaService;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
@@ -14,27 +16,31 @@ public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaServic
     public static final int OBJECT_LIMIT = 10;
 
     @Override
-    public PlayerSnapshot calculateDelta(PlayerSnapshot previous, PlayerSnapshot next) {
+    public PlayerSnapshot calculateDelta(PlayerSnapshot base, List<PlayerSnapshot> sent) {
 
-        List<GameObject> walls = new ArrayList<>(previous.getWalls())
-            .stream()
-            .limit(OBJECT_LIMIT)
-            .collect(Collectors.toList());
+        PlayerSnapshot res = PlayerSnapshot.builder().build();
+        Set<GameObject> walls = new HashSet<>();
 
-        if (next != null) {
-            previous.getWalls().stream()
-                .filter(w -> !next.getWalls().contains(w))
-                .forEach(w -> {
-                    if (walls.size() < OBJECT_LIMIT) walls.add(w);
-                });
+        for (PlayerSnapshot snapshot : sent) {
+
+            if (base != null) {
+                walls = snapshot.getWalls().stream()
+                    .filter(w -> !base.getWalls().contains(w))
+                    .collect(Collectors.toSet());
+            } else {
+                walls.addAll(snapshot.getWalls());
+            }
+
+            res = PlayerSnapshot.builder()
+                .character(snapshot.getCharacter())
+                .enemies(snapshot.getEnemies())
+                .projectiles(snapshot.getProjectiles())
+                .explosions(snapshot.getExplosions())
+                .walls(new ArrayList<>(walls))
+                .build();
         }
 
-        return PlayerSnapshot.builder()
-            .character(previous.getCharacter())
-            .enemies(previous.getEnemies())
-            .projectiles(previous.getProjectiles())
-            .explosions(previous.getExplosions())
-            .walls(walls)
-            .build();
+
+        return res;
     }
 }
