@@ -95,7 +95,7 @@ function WebSocket({host, actions}) {
 
                 webSocket.subscribe(ENDPOINT.TOPIC_PLAYER_LIST + sessionId, message => {
                     const serverSnapshot = JSON.parse(message.body);
-                    inputState.ackSN = serverSnapshot.sequenceNumber;
+                    inputState.ackSN = serverSnapshot.sn;
                     actions.addSnapshot(serverSnapshot);
                 });
 

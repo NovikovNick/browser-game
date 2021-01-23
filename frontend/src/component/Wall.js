@@ -2,15 +2,14 @@ import React from "react";
 import Polygon from "./Polygon";
 import Point from "./Point";
 
-export default function Wall({offset = [0, 0], gameObject}) {
+export default function Wall({gameObject}) {
     const fillColor = "#eee";
     const lineColor = "#ccc";
     const cornerColor = "#ddd";
     return (<g>
 
-        <Polygon offset={offset} polygon={gameObject.rigidBody.transformed} color={lineColor} empty={true}/>
-        <Polygon offset={offset} polygon={gameObject.rigidBody.transformed} color={fillColor} empty={false}/>
-        {gameObject.rigidBody.transformed.points.map((p, i) =>
-            <Point offset={offset} key={i}  data={[p.d0, p.d1]} radius={3} color={cornerColor}/>)}
+        <Polygon polygon={gameObject.shape} color={lineColor} empty={true}/>
+        <Polygon polygon={gameObject.shape} color={fillColor} empty={false}/>
+        {gameObject.shape.map((p, i) => <Point key={i} data={p} radius={3} color={cornerColor}/>)}
     </g>)
 }

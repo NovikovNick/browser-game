@@ -32,6 +32,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -139,9 +140,12 @@ public class GameStateServiceImpl implements GameStateService {
             Map<String, Player> players = this.state.getPlayers();
             Set<Bullet> projectiles = this.state.getProjectiles();
             List<Vector2d> explosions = new ArrayList<>();
-            List<GameObject> walls = LocalDateTime.now().getSecond() % 10 == 0
+
+            /*List<GameObject> walls = LocalDateTime.now().getSecond() % 10 == 0
                 ? wallService.generateWalls()
-                : this.state.getWalls();
+                : this.state.getWalls();*/
+            List<GameObject> walls = wallService.generateWalls();
+
             Map<String, Long> ackSN = this.state.getPlayersAckSN();
 
             for (String sessionId : inputs.keySet()) {
@@ -205,6 +209,7 @@ public class GameStateServiceImpl implements GameStateService {
                         }
 
                         player.setGameObject(GameObject.builder()
+                            .id(player.getGameObject().getId())
                             .transform(Transform.builder()
                                 .position(center)
                                 .rotationAngleRadian(angleRadian)
@@ -245,8 +250,7 @@ public class GameStateServiceImpl implements GameStateService {
                         return null;
                     }
 
-                    GameObject go = gameObjectService.newGameObject(center, angleRadian,
-                        shapeService.bulletShape());
+                    GameObject go = gameObjectService.transform(bullet.getGameObject(), center, angleRadian);
 
                     for (Player player : players.values()) {
                         Polygon2d playerBox = player.getGameObject().getRigidBody().getTransformed();

@@ -14,6 +14,25 @@ import org.springframework.stereotype.Service;
 public class GameObjectServiceImpl implements GameObjectService {
 
     @Override
+    public GameObject transform(GameObject obj, Vector2d position, float rotationAngleRadian) {
+
+        Polygon2d shape = obj.getRigidBody().getShape();
+        Polygon2d transformed = GeometryUtil.rotate(shape.withOffset(position), rotationAngleRadian, position);
+
+        return GameObject.builder()
+            .id(obj.getId())
+            .transform(Transform.builder()
+                .position(position)
+                .rotationAngleRadian(rotationAngleRadian)
+                .build())
+            .rigidBody(RigidBody.builder()
+                .shape(shape)
+                .transformed(transformed)
+                .build())
+            .build();
+    }
+
+    @Override
     public GameObject newGameObject(Vector2d position, float rotationAngleRadian, Polygon2d shape) {
         return getGameObject(UUID.randomUUID().toString(), position, rotationAngleRadian, shape);
     }

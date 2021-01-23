@@ -10,6 +10,8 @@ import com.metalheart.service.state.ShapeService;
 import com.metalheart.service.state.WallService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,6 +29,20 @@ public class MazeService implements WallService {
 
     @Override
     public List<GameObject> generateWalls() {
+
+        if (true) {
+            return IntStream
+                .range(0, 10)
+                .mapToObj(i -> {
+                    return gameObjectService.newGameObject(Vector2d.of(
+                        i * 100,
+                        i * 100),
+                        0,
+                        shapeService.wallShape());
+                })
+                .collect(Collectors.toList());
+        }
+
 
         RecursiveBacktrackerMazeBuilder mazeBuilder = new RecursiveBacktrackerMazeBuilder()
             .setWidth(5)

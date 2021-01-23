@@ -4,24 +4,19 @@ const initialState = {
     character: {
         sessionId: false,
         username: "",
-        gameObject: {
-            transform: {
-                position: {d0: 0.0, d1: 0.0},
-                rotationAngleRadian: 0
-            },
-            rigidBody: {
-                shape: {
-                    points: []
-                },
-                transformed: {
-                    points: []
-                }
-            }
+        gameObject : {
+            id: null,
+            pos: [0, 0],
+            rot: 0,
+            shape: []
         }
     },
     projectiles: [
         {
-            points: [{d0: 0.0, d1: 0.0}]
+            id: null,
+            pos: [0, 0],
+            rot: 0,
+            shape: []
         }
     ],
     explosions: [],
@@ -56,7 +51,7 @@ export default function players(state = initialState, action) {
         case types.UPDATE_STATE: {
 
             if (action.walls.length) {
-                console.log("Received: " + action.walls.length)
+                // console.log("Received: " + action.walls.length)
             }
 
             return {
@@ -67,17 +62,19 @@ export default function players(state = initialState, action) {
                 },
                 enemies: action.enemies,
                 projectiles: action.projectiles,
+                walls: action.walls
+                /*,
                 walls: action.walls.length ? [...action.walls] : [...state.walls],
                 explosions: [...state.explosions]
                     .filter(i => i && (now - i.timestamp) < 1000)
-                    .concat(action.explosions)
+                    .concat(action.explosions)*/
             }
         }
         case types.UPDATE_SNAPSHOTS: {
             return {
                 ...state,
                 snapshots: [{
-                    ...action.snapshot.snapshot,
+                    ...action.snapshot,
                     timestamp: now
                 }].concat(state.snapshots.slice(0, 10))
             };

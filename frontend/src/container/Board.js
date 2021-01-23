@@ -84,11 +84,6 @@ console.log(p1, p2, p3, p4, intersected)
 
 function Board({character, enemies, projectiles, explosions, walls}) {
 
-    const offset = [
-        character.gameObject.transform.position.d0 - window.innerWidth / 2,
-        character.gameObject.transform.position.d1 - window.innerHeight / 2
-    ]
-
     const now = new Date().getTime();
     return (
         <svg version="1.1"
@@ -102,12 +97,15 @@ function Board({character, enemies, projectiles, explosions, walls}) {
 
             {intersected.intersect && <circle cx={intersected.point[0]} cy={intersected.point[1]} r={5} fill={"blue"}/>}
 */}
-            <Player offset={offset} character={character} isEnemy={false} color={"blue"}/>
-            {walls.map((wall, i) => <Wall offset={offset} key={i} gameObject={wall}/>)}
-            {enemies.map((item, i) => <Player offset={offset} key={i} character={item} isEnemy={true} color={"red"}/>)}
-            {explosions.map((explosion, i) => <Point offset={offset} key={i} data={[explosion.point.d0, explosion.point.d1]} radius={(now - explosion.timestamp) / 1000 * 60} color={"yellow"}/>)}
-            {projectiles.map((projectile, i) => projectile.gameObject && <Polygon offset={offset} key={i} polygon={projectiles[i].gameObject.rigidBody.transformed} color={"red"}/>)}
+            <Player character={character} isEnemy={false} color={"blue"}/>
 
+            {enemies.map((item, i) => <Player key={i} character={item} isEnemy={true} color={"red"}/>)}
+            {walls.map((wall, i) => <Wall key={i} gameObject={wall}/>)}
+            {projectiles.map((projectile, i) => projectile && <Polygon key={i} polygon={projectile.shape} color={"red"}/>)}
+
+            {/*
+            {explosions.map((explosion, i) => <Point offset={offset} key={i} data={[explosion.point.d0, explosion.point.d1]} radius={(now - explosion.timestamp) / 1000 * 60} color={"yellow"}/>)}
+            */}
         </svg>
     );
 }

@@ -2,10 +2,12 @@ package com.metalheart.socket;
 
 import com.metalheart.model.Constant;
 import com.metalheart.model.event.ServerTicEvent;
+import com.metalheart.model.response.SnapshotView;
 import com.metalheart.service.state.GameStateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -17,24 +19,29 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 public class SocketEventListener {
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    private GameStateService gameStateService;
+    private final GameStateService gameStateService;
+
+    @Autowired
+    private final ConversionService conversionService;
 
     public SocketEventListener(SimpMessagingTemplate messagingTemplate,
-                               GameStateService gameStateService) {
+                               GameStateService gameStateService,
+                               ConversionService conversionService) {
         this.messagingTemplate = messagingTemplate;
         this.gameStateService = gameStateService;
+        this.conversionService = conversionService;
     }
 
     @EventListener
     private void handleGameStateEvent(ServerTicEvent event) {
 
         event.getSnapshots().forEach((sessionId, snapshot) -> {
-
             String id = snapshot.getSnapshot().getCharacter().getId();
-            messagingTemplate.convertAndSendToUser(id, Constant.OUTPUT_PLAYER_STATE, snapshot);
+            SnapshotView view = conversionService.convert(snapshot, SnapshotView.class);
+            messagingTemplate.convertAndSendToUser(id, Constant.OUTPUT_PLAYER_STATE, view);
         });
     }
 

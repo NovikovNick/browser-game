@@ -38,21 +38,18 @@ s-58.514,31.917-58.514,85.112v236.717l-29.257,87.771H343.771z"/>
     );
 }
 
-export default function Player({offset = [0, 0], character, isEnemy, color}) {
+export default function Player({character, isEnemy, color}) {
 
-    const angleRadian = character.gameObject.transform.rotationAngleRadian;
+    const angleRadian = character.gameObject.rot;
     const angleDegree = angleRadian * 180 / Math.PI + 180;
 
     const debug = true;
 
     return (
         <g>
-            <Ship color={color} isEnemy={isEnemy} center={[
-                character.gameObject.transform.position.d0 - offset[0],
-                character.gameObject.transform.position.d1 - offset[1]
-            ]} angleDegree={angleDegree}/>
+            <Ship color={color} isEnemy={isEnemy} center={character.gameObject.pos} angleDegree={angleDegree}/>
 
-            {debug && <Polygon offset={offset} polygon={character.gameObject.rigidBody.transformed} color={color} empty={true}/>}
+            {debug && <Polygon polygon={character.gameObject.shape} color={color} empty={true}/>}
         </g>
     );
 }

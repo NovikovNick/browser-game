@@ -12,54 +12,31 @@ import WebSocket from "./container/WebSocket";
 import * as actions from "./store/ReduxActions";
 import {Container} from "react-bootstrap";
 import Controls from "./container/Controls";
+import * as ShapeService from "./service/ShapeService";
+import * as GeometryService from "./service/GeometryService";
 
 
 const store = createStore(combineReducers(reducers), applyMiddleware(thunk));
 // window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
 
-
-function toScreenCoord(point) {
-    return {
-        d0:point.d0,
-        d1:point.d1
-    };
+function interpolateNumbers(p1, p2, mod) {
+    return p1 + (p2 - p1) * mod;
 }
 
 function interpolatePoints(p1, p2, mod) {
-    return toScreenCoord({
-        d0: p1.d0 + (p2.d0 - p1.d0) * mod,
-        d1: p1.d1 + (p2.d1 - p1.d1) * mod
-    });
-}
-
-function interpolatePolygon(p1, p2, mod) {
-
-    const points = [];
-    for (let i = 0; i < p1.points.length; i++) {
-        const p1Point = p1.points[i]
-        const p2Point = p2.points[i]
-        points.push(interpolatePoints(p2Point, p1Point, mod))
-    }
-    return {points: points}
+    return [
+        interpolateNumbers(p1[0], p2[0], mod),
+        interpolateNumbers(p1[1], p2[1], mod)
+    ];
 }
 
 function interpolateGameObject(p1, p2, mod) {
 
-    let transformed = {};
-    if(p1.rigidBody.transformed && p2.rigidBody.transformed) {
-        transformed = interpolatePolygon(p2.rigidBody.transformed, p1.rigidBody.transformed, mod);
-    }
-
-
     return {
-        transform: {
-            rotationAngleRadian: p1.transform.rotationAngleRadian + (p2.transform.rotationAngleRadian - p1.transform.rotationAngleRadian) * mod,
-            position: interpolatePoints(p1.transform.position, p2.transform.position, mod)
-        },
-        rigidBody: {
-            ...p1.rigidBody,
-            transformed: transformed
-        }
+        id: p1.id,
+        pos: interpolatePoints(p1.pos, p2.pos, mod),
+        rot: interpolateNumbers(p1.rot, p2.rot, mod),
+        shape: p1.shape
     };
 }
 
@@ -67,13 +44,14 @@ function interpolatePlayer(p1, p2, mod) {
 
     const character = {
         ...p1,
-        gameObject: interpolateGameObject(p2.gameObject, p1.gameObject, mod)
+        gameObject: interpolateGameObject(p2.obj, p1.obj, mod)
     };
     return character;
 }
 
 let timerId = setTimeout(function tick() {
 
+    const center = [window.innerWidth / 2, window.innerHeight / 2]
     const snapshots = store.getState().state.snapshots;
 
     if (snapshots) {
@@ -89,25 +67,51 @@ let timerId = setTimeout(function tick() {
 
             // player
             const character = interpolatePlayer(fst.character, snd.character, mod);
+            const offset = [
+                character.gameObject.pos[0] - center[0],
+                character.gameObject.pos[1] - center[1]
+            ];
+            if (character) {
+                character.gameObject.pos = center;
+                character.gameObject.shape = ShapeService.getPlayerShape().map(p => {
+                    return GeometryService.rotate(
+                        [p[0] + center[0], p[1] + center[1]],
+                        character.gameObject.rot,
+                        center
+                    );
+                });
+            }
 
             // enemies
             const enemies = [];
             {
                 const fstGroupedById = fst.enemies.reduce((r, a) => {
-                    r[a.sessionId] = a;
+                    r[a.obj.id] = a;
                     return r;
                 }, {});
 
                 const sndGroupedById = snd.enemies.reduce((r, a) => {
-                    r[a.sessionId] = a;
+                    r[a.obj.id] = a;
                     return r;
                 }, {});
 
-                for (const [sessionId, value] of Object.entries(fstGroupedById)) {
-                    if (sndGroupedById[sessionId]) {
+                for (const [id, value] of Object.entries(fstGroupedById)) {
+                    if (sndGroupedById[id]) {
                         const p1 = value
-                        const p2 = sndGroupedById[sessionId]
-                        enemies.push(interpolatePlayer(p1, p2, mod));
+                        const p2 = sndGroupedById[id]
+                        const item = interpolatePlayer(p1, p2, mod);
+
+                        const pos = [item.gameObject.pos[0] - offset[0], item.gameObject.pos[1] - offset[1]];
+                        item.gameObject.pos = pos;
+                        item.gameObject.shape = ShapeService.getPlayerShape().map(p => {
+                            return GeometryService.rotate(
+                                [p[0] + pos[0], p[1] + pos[1]],
+                                item.gameObject.rot,
+                                pos
+                            );
+                        });
+
+                        enemies.push(item);
                     }
                 }
             }
@@ -129,40 +133,43 @@ let timerId = setTimeout(function tick() {
                         const p1 = value
                         const p2 = sndGroupedById[id]
 
-                        projectiles.push({
-                            ...p1,
-                            gameObject: interpolateGameObject(p2.gameObject, p1.gameObject, mod)
+                        const item = interpolateGameObject(p2, p1, mod);
+
+                        const pos = [item.pos[0] - offset[0], item.pos[1] - offset[1]];
+                        item.pos = pos;
+                        item.shape = ShapeService.getBulletShape().map(p => {
+                            return GeometryService.rotate(
+                                [p[0] + pos[0], p[1] + pos[1]],
+                                item.rot,
+                                pos
+                            );
                         });
+
+                        projectiles.push(item);
                     }
                 }
             }
 
             // explosions
-            const explosions = fst.explosions.map(i => {
-                return {timestamp: now, point: toScreenCoord(i)}
-            })
+            const explosions = []; /*fst.explosions.map(i => {
+                return {timestamp: now, point: i}
+            })*/
 
             // walls
-            const walls = fst.walls
-            /*{
-                const fstGroupedById = fst.walls.reduce((r, a) => {
-                    r[a.id] = a;
-                    return r;
-                }, {});
-                const sndGroupedById = snd.walls.reduce((r, a) => {
-                    r[a.id] = a;
-                    return r;
-                }, {});
-
-                for (const [id, value] of Object.entries(fstGroupedById)) {
-                    if (sndGroupedById[id]) {
-                        const p1 = value
-                        const p2 = sndGroupedById[id]
-
-                        walls.push(interpolateGameObject(p2, p1, mod));
-                    }
-                }
-            }*/
+            let walls = []
+            {
+                walls = fst.walls.map(wall => {
+                    const o = [wall.pos[0] - offset[0], wall.pos[1] - offset[1]];
+                    wall.shape = ShapeService.getWallShape().map(p => {
+                        return GeometryService.rotate(
+                            [p[0] + o[0], p[1] + o[1]],
+                            wall.rot,
+                            o
+                        );
+                    });
+                    return wall;
+                });
+            }
 
             store.dispatch(actions.updateState(character, enemies, projectiles, explosions, walls));
         }
