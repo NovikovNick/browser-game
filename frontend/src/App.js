@@ -52,7 +52,9 @@ function interpolatePlayer(p1, p2, mod) {
 let timerId = setTimeout(function tick() {
 
     const center = [window.innerWidth / 2, window.innerHeight / 2]
-    const snapshots = store.getState().state.snapshots;
+    const state = store.getState().state;
+    const snapshots = state.snapshots;
+    const walls = state.walls;
 
     if (snapshots) {
         const fst = snapshots[0]
@@ -156,22 +158,45 @@ let timerId = setTimeout(function tick() {
             })*/
 
             // walls
-            let walls = []
+            const updatedWalls = [];
             {
-                walls = fst.walls.map(wall => {
-                    const o = [wall.pos[0] - offset[0], wall.pos[1] - offset[1]];
-                    wall.shape = ShapeService.getWallShape().map(p => {
-                        return GeometryService.rotate(
-                            [p[0] + o[0], p[1] + o[1]],
-                            wall.rot,
-                            o
-                        );
-                    });
-                    return wall;
-                });
+                const wallObjIds = new Set();
+                walls.forEach(w => wallObjIds.add(w.id));
+                fst.walls.length > 0 && fst.walls.forEach(w => wallObjIds.add(w.id))
+                snd.walls.length > 0 && snd.walls.forEach(w => wallObjIds.add(w.id))
+
+                const wallGroupedById = walls.reduce((r, a) => {r[a.id] = a;return r;}, {});
+                const fstGroupedById = fst.walls.reduce((r, a) => {r[a.id] = a;return r;}, {});
+                const sndGroupedById = snd.walls.reduce((r, a) => {r[a.id] = a;return r;}, {});
+
+                wallObjIds.forEach(id => {
+
+                    const isExist = wallGroupedById[id] != undefined;
+                    const isUpdated = fstGroupedById[id] != undefined && sndGroupedById[id] != undefined;
+                    const isCreated = fstGroupedById[id] != undefined && wallGroupedById[id] == undefined;
+                    const isRemoved = fst.removed && fst.removed.includes(id);
+
+                    if(!isRemoved && (isExist || isUpdated || isCreated)) {
+
+                        const wall = isUpdated
+                            ? interpolateGameObject(sndGroupedById[id], fstGroupedById[id], mod)
+                            : isCreated ? fstGroupedById[id] : wallGroupedById[id];
+
+                        const wallOffset = [wall.pos[0] - offset[0], wall.pos[1] - offset[1]];
+
+                        updatedWalls.push({
+                            id: id,
+                            pos: wall.pos,
+                            rot: wall.rot,
+                            shape: ShapeService.getWallShape().map(p => {
+                                return GeometryService.rotate([p[0] + wallOffset[0], p[1] + wallOffset[1]], wall.rot, wallOffset);
+                            })
+                        })
+                    }
+                })
             }
 
-            store.dispatch(actions.updateState(character, enemies, projectiles, explosions, walls));
+            store.dispatch(actions.updateState(character, enemies, projectiles, explosions, updatedWalls));
         }
     }
 

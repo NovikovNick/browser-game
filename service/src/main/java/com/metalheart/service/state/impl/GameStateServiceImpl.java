@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +33,6 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -77,8 +77,9 @@ public class GameStateServiceImpl implements GameStateService {
             .playersAckSN(new HashMap<>())
             .players(new HashMap<>())
             .projectiles(new TreeSet<>(Comparator.comparing(Bullet::getId)))
-            .explosions(new ArrayList<>())
+            .explosions(Collections.emptyList())
             .walls(this.wallService.generateWalls())
+            .removedGameObjectIds(Collections.emptyList())
             .build();
     }
 
@@ -140,11 +141,18 @@ public class GameStateServiceImpl implements GameStateService {
             Map<String, Player> players = this.state.getPlayers();
             Set<Bullet> projectiles = this.state.getProjectiles();
             List<Vector2d> explosions = new ArrayList<>();
+            List<String> removedGameObjectIds = new ArrayList<>();
 
-            /*List<GameObject> walls = LocalDateTime.now().getSecond() % 10 == 0
-                ? wallService.generateWalls()
-                : this.state.getWalls();*/
-            List<GameObject> walls = wallService.generateWalls();
+            final List<GameObject> walls;
+
+            if (LocalDateTime.now().getSecond() % 10 == 0) {
+                this.state.getWalls().stream().map(GameObject::getId).forEach(removedGameObjectIds::add);
+                walls = wallService.generateWalls();
+            } else {
+                walls = this.state.getWalls();
+            }
+
+            //List<GameObject> walls = wallService.generateWalls();
 
             Map<String, Long> ackSN = this.state.getPlayersAckSN();
 
@@ -298,6 +306,7 @@ public class GameStateServiceImpl implements GameStateService {
                 .projectiles(projectiles)
                 .explosions(explosions)
                 .walls(walls)
+                .removedGameObjectIds(removedGameObjectIds)
                 .build();
             cloned = this.state.clone();
 

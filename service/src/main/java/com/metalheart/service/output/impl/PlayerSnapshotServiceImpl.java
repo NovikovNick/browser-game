@@ -72,6 +72,7 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
                         .map(offset::plus)
                         .collect(Collectors.toList()))
                     .walls(walls.stream().map(w -> gameObjectService.withOrigin(offset, w)).collect(Collectors.toList()))
+                    .removed(state.getRemovedGameObjectIds())
                     .build();
                 snapshots.put(id, snapshot);
             });

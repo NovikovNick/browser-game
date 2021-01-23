@@ -8,7 +8,6 @@ import com.metalheart.model.response.GameObjectView;
 import com.metalheart.model.response.PlayerView;
 import com.metalheart.model.response.SnapshotView;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
@@ -42,6 +41,7 @@ public class StateSnapshotToSnapshotViewConverter implements Converter<StateSnap
             .enemies(enemies)
             .walls(walls)
             .projectiles(projectiles)
+            .removed(source.getSnapshot().getRemoved())
             .build();
     }
 

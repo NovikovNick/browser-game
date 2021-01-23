@@ -19,4 +19,5 @@ public class PlayerSnapshot {
     private Set<Bullet> projectiles;
     private List<Vector2d> explosions;
     private List<GameObject> walls;
+    private List<String> removed;
 }

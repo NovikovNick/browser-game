@@ -20,6 +20,7 @@ public class State implements Cloneable {
     private Set<Bullet> projectiles;
     private List<Vector2d> explosions;
     private List<GameObject> walls;
+    private List<String> removedGameObjectIds;
 
     @Override
     public State clone() {
@@ -29,6 +30,7 @@ public class State implements Cloneable {
             .projectiles(this.getProjectiles())
             .explosions(this.getExplosions())
             .walls(this.getWalls())
+            .removedGameObjectIds(this.getRemovedGameObjectIds())
             .build();
     }
 }

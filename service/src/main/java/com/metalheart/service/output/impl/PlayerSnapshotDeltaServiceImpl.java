@@ -8,7 +8,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaService {
@@ -18,7 +21,7 @@ public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaServic
     @Override
     public PlayerSnapshot calculateDelta(PlayerSnapshot base, List<PlayerSnapshot> sent) {
 
-        PlayerSnapshot res = PlayerSnapshot.builder().build();
+        PlayerSnapshot res = PlayerSnapshot.builder().removed(new ArrayList<>()).build();
         Set<GameObject> walls = new HashSet<>();
 
         for (PlayerSnapshot snapshot : sent) {
@@ -31,12 +34,14 @@ public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaServic
                 walls.addAll(snapshot.getWalls());
             }
 
+
             res = PlayerSnapshot.builder()
                 .character(snapshot.getCharacter())
                 .enemies(snapshot.getEnemies())
                 .projectiles(snapshot.getProjectiles())
                 .explosions(snapshot.getExplosions())
                 .walls(new ArrayList<>(walls))
+                .removed(Stream.concat(res.getRemoved().stream(), snapshot.getRemoved().stream()).collect(toList()))
                 .build();
         }
 

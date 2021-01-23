@@ -62,9 +62,8 @@ export default function players(state = initialState, action) {
                 },
                 enemies: action.enemies,
                 projectiles: action.projectiles,
-                walls: action.walls
+                walls: [...action.walls]
                 /*,
-                walls: action.walls.length ? [...action.walls] : [...state.walls],
                 explosions: [...state.explosions]
                     .filter(i => i && (now - i.timestamp) < 1000)
                     .concat(action.explosions)*/

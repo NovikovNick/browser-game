@@ -12,5 +12,6 @@ public class SnapshotView {
     private List<PlayerView> enemies;
     private List<GameObjectView> walls;
     private List<GameObjectView> projectiles;
+    private List<String> removed;
 }
 
