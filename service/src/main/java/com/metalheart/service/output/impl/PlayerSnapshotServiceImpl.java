@@ -2,13 +2,12 @@ package com.metalheart.service.output.impl;
 
 import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.State;
-import com.metalheart.model.common.BoundingBox2d;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
-import com.metalheart.service.state.GameObjectService;
 import com.metalheart.service.output.PlayerSnapshotService;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,13 +20,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
 
-    private BoundingBox2d SCREEN = BoundingBox2d.of(Vector2d.ZERO_VECTOR, Vector2d.ZERO_VECTOR);
+    public static final int FIELD_OF_VIEW = 600;
 
-    private final GameObjectService gameObjectService;
     private Lock lock;
 
-    public PlayerSnapshotServiceImpl(GameObjectService gameObjectService) {
-        this.gameObjectService = gameObjectService;
+    public PlayerSnapshotServiceImpl() {
         this.lock = new ReentrantLock();
     }
 
@@ -46,9 +43,6 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
             players.forEach((id, player) -> {
 
                 Player cloned = player.clone();
-                Vector2d offset = SCREEN.getCenter().reversed();
-
-                cloned.setGameObject(gameObjectService.withOrigin(offset, cloned.getGameObject()));
 
                 List<Player> enemies = players.values().stream()
                     .filter(enemy -> !player.equals(enemy))
@@ -56,9 +50,25 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
                         .id(enemy.getId())
                         .sessionId(enemy.getSessionId())
                         .username(enemy.getUsername())
-                        .gameObject(gameObjectService.withOrigin(offset, enemy.getGameObject()))
+                        .gameObject(enemy.getGameObject())
                         .build())
                     .collect(Collectors.toList());
+
+
+                List<String> removedWalls = new ArrayList<>();
+                List<GameObject> playerWalls = new ArrayList<>();
+
+                for (GameObject wall : walls) {
+                    Vector2d playerPos = player.getGameObject().getTransform().getPosition();
+                    Vector2d wallPos = wall.getTransform().getPosition();
+
+                    if (Math.abs(playerPos.getD0() - wallPos.getD0()) < FIELD_OF_VIEW
+                        && Math.abs(playerPos.getD1() - wallPos.getD1()) < FIELD_OF_VIEW) {
+                        playerWalls.add(wall);
+                    } else {
+                        removedWalls.add(wall.getId());
+                    }
+                }
 
                 PlayerSnapshot snapshot = PlayerSnapshot.builder()
                     .character(cloned)
@@ -66,13 +76,11 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
                     .projectiles(projectiles.stream().map(p -> Bullet.builder()
                         .id(p.getId())
                         .playerId(p.getPlayerId())
-                        .gameObject(gameObjectService.withOrigin(offset, p.getGameObject()))
+                        .gameObject(p.getGameObject())
                         .build()).collect(Collectors.toSet()))
-                    .explosions(explosions.stream()
-                        .map(offset::plus)
-                        .collect(Collectors.toList()))
-                    .walls(walls.stream().map(w -> gameObjectService.withOrigin(offset, w)).collect(Collectors.toList()))
-                    .removed(state.getRemovedGameObjectIds())
+                    .explosions(explosions)
+                    .walls(playerWalls)
+                    .removed(removedWalls)
                     .build();
                 snapshots.put(id, snapshot);
             });

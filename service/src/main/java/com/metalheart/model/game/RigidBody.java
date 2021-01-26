@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @Builder
 public class RigidBody {
-
+    private final Boolean isStatic;
     private final Polygon2d shape;
     private final Polygon2d transformed;
 }

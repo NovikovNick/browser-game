@@ -10,6 +10,7 @@ import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.model.game.RigidBody;
 import com.metalheart.model.game.Transform;
+import com.metalheart.model.struct.SweepAndPrune;
 import com.metalheart.service.GeometryUtil;
 import com.metalheart.service.input.PlayerInputService;
 import com.metalheart.service.state.CollisionDetectionService;
@@ -33,6 +34,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -139,20 +141,10 @@ public class GameStateServiceImpl implements GameStateService {
             Instant now = Instant.now();
 
             Map<String, Player> players = this.state.getPlayers();
+            final List<GameObject> walls = this.state.getWalls();
             Set<Bullet> projectiles = this.state.getProjectiles();
             List<Vector2d> explosions = new ArrayList<>();
             List<String> removedGameObjectIds = new ArrayList<>();
-
-            final List<GameObject> walls;
-
-            if (LocalDateTime.now().getSecond() % 10 == 0) {
-                this.state.getWalls().stream().map(GameObject::getId).forEach(removedGameObjectIds::add);
-                walls = wallService.generateWalls();
-            } else {
-                walls = this.state.getWalls();
-            }
-
-            //List<GameObject> walls = wallService.generateWalls();
 
             Map<String, Long> ackSN = this.state.getPlayersAckSN();
 
@@ -293,6 +285,22 @@ public class GameStateServiceImpl implements GameStateService {
                 .collect(toSet());
 
 
+            SweepAndPrune.collide(
+                players.values().stream().map(Player::getGameObject).collect(Collectors.toList()),
+                (o1, o2) -> {
+
+                    CollisionResult collision = collisionService.detectCollision(
+                        o1.getRigidBody().getTransformed(),
+                        o2.getRigidBody().getTransformed());
+
+                    if (collision.isCollide()) {
+                       /* explosions.add(center);
+                        Vector2d normal = collision.getNormal();
+                        transformed = GeometryUtil.rotate(shape.withOffset(center), -angleRadian, center);
+                        center = center.plus(normal.reversed().scale(collision.getDepth()));*/
+                    }
+                }
+            );
 
             Map<String, Long> ack = new HashMap<>();
             ackSN.forEach((sessionId, n) -> {

@@ -1,5 +1,6 @@
 package com.metalheart.service;
 
+import com.metalheart.model.common.AABB2d;
 import com.metalheart.model.common.Line;
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
@@ -12,6 +13,18 @@ public class GeometryUtil {
 
     private GeometryUtil() {
         throw new UnsupportedOperationException();
+    }
+
+    public static Line getProjection(AABB2d aabb, int axis) {
+
+        switch (axis) {
+            case 0:
+                return new Line(aabb.getMin().getD0(), aabb.getMax().getD0());
+            case 1:
+                return new Line(aabb.getMin().getD1(), aabb.getMax().getD1());
+            default:
+                throw new IllegalArgumentException();
+        }
     }
 
     public static Line getProjection(Polygon2d polygon) {

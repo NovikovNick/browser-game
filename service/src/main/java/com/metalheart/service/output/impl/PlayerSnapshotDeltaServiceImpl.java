@@ -41,7 +41,7 @@ public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaServic
                 .projectiles(snapshot.getProjectiles())
                 .explosions(snapshot.getExplosions())
                 .walls(new ArrayList<>(walls))
-                .removed(Stream.concat(res.getRemoved().stream(), snapshot.getRemoved().stream()).collect(toList()))
+                .removed(snapshot.getRemoved())
                 .build();
         }
 

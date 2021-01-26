@@ -30,20 +30,6 @@ public class MazeService implements WallService {
     @Override
     public List<GameObject> generateWalls() {
 
-        if (true) {
-            return IntStream
-                .range(0, 10)
-                .mapToObj(i -> {
-                    return gameObjectService.newGameObject(Vector2d.of(
-                        i * 100,
-                        i * 100),
-                        0,
-                        shapeService.wallShape());
-                })
-                .collect(Collectors.toList());
-        }
-
-
         RecursiveBacktrackerMazeBuilder mazeBuilder = new RecursiveBacktrackerMazeBuilder()
             .setWidth(5)
             .setHeight(5)
