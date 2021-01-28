@@ -10,6 +10,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -84,6 +85,20 @@ public class CanvasServiceImpl implements CanvasService {
 
         draw(p0, color);
         draw(p1, color);
+    }
+
+    @Override
+    public void drawArrow(Vector2d from, Vector2d to, Color color) {
+
+        GraphicsContext gc = getGraphicsContext();
+
+        gc.setStroke(color);
+        gc.strokeLine(
+            from.getD0(), from.getD1(),
+            to.getD0(), to.getD1()
+        );
+
+        draw(from, color);
     }
 
     @Override
