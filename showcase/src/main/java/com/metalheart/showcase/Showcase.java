@@ -5,6 +5,7 @@ import com.metalheart.model.common.AABB2d;
 import com.metalheart.model.common.CollisionResult;
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
+import com.metalheart.model.game.Material;
 import com.metalheart.service.state.CollisionDetectionService;
 import com.metalheart.service.state.ShapeService;
 import com.metalheart.showcase.service.CanvasService;
@@ -21,7 +22,8 @@ import static java.util.Arrays.asList;
 @Component
 public class Showcase extends AnimationTimer {
 
-    public static final int SPEED = 1;
+    public static final int SPEED = 5;
+    public static final float GRAVITY  = 1;
     private final CanvasService canvasService;
     private final ShowcaseInputService inputService;
     private final ShapeService shapeService;
@@ -40,7 +42,7 @@ public class Showcase extends AnimationTimer {
         this.inputService = inputService;
         this.shapeService = shapeService;
         this.collisionDetectionService = collisionDetectionService;
-        incBody = new Body(shapeService.playerShape(), Vector2d.of(100, 100), 10);
+        incBody = new Body(shapeService.playerShape(), Vector2d.of(100, 100), Material.WOOD);
         int sizeX = 1024;
         int sizeY = 768;
         int width = 100;
@@ -50,13 +52,20 @@ public class Showcase extends AnimationTimer {
             Vector2d.of(0, sizeY),
             Vector2d.of(0, 0)
         );
+
         bodies = new ArrayList<>();
         bodies.addAll(asList(
             incBody,
-            new Body(shapeService.bulletShape(),  Vector2d.of(200, 400), 5),
-            new Body(shapeService.wallShape(),  Vector2d.of(400, 400), 0),
-            new Body(vert,  Vector2d.of(0, 0), 0),
-            new Body(vert,  Vector2d.of(sizeX + width, 0), 0)
+            new Body(shapeService.bulletShape(),  Vector2d.of(200, 400), Material.METAL),
+            new Body(shapeService.wallShape(),  Vector2d.of(400, 400), Material.METAL),
+            new Body(vert,  Vector2d.of(0, 0), Material.STATIC),
+            new Body(vert,  Vector2d.of(sizeX + width, 0), Material.STATIC),
+            new Body(new Polygon2d(
+                Vector2d.of(15.0f, 724.0f),
+                Vector2d.of(13.0f, 758.0f),
+                Vector2d.of(1005.0f, 755.0f),
+                Vector2d.of(1005.0f, 733.0f)
+            ), Vector2d.of(0, 0), Material.STATIC)
         ));
     }
 
@@ -68,17 +77,23 @@ public class Showcase extends AnimationTimer {
         Vector2d mousePos = inputService.getMousePosition();
 
         PlayerInput input = inputService.getInput();
-        incBody.velocity = incBody.velocity.plus( getInputVector(input));
+        incBody.force = incBody.force.plus(getInputVector(input).scale(SPEED));
 
         if (input.getLeftBtnClicked()) {
-            System.out.println("!");
-            Body body = new Body(shapeService.wallShape(), mousePos, 5);
-            body.velocity = incBody.velocity;
+            Body body = new Body(new Polygon2d(
+                Vector2d.of(0, 0),
+                Vector2d.of(0, 30),
+                Vector2d.of(30, 30),
+                Vector2d.of(30, 0)
+            ), mousePos, Material.BOUNCY_BALL);
             bodies.add(body);
         }
 
         Polygon2d[] rects = bodies.stream()
             .map(body -> {
+                if (body.mass != 0) {
+                    body.force = body.force.plus(Vector2d.UNIT_VECTOR_D1.scale(GRAVITY));
+                }
                 body.integrate(1);
                 return body.getShape();
             })
@@ -122,7 +137,7 @@ public class Showcase extends AnimationTimer {
             return;
 
         // Вычисляем упругость
-        float e = 1;// min( A.restitution, B.restitution)
+        float e = Math.min(a.material.getRestitution(), b.material.getRestitution());
 
         // Вычисляем скаляр импульса силы
         float j = -(1 + e) * velAlongNormal;
@@ -132,6 +147,14 @@ public class Showcase extends AnimationTimer {
         Vector2d impulse = normal.scale(j);
         a.velocity = a.velocity.plus(impulse.scale(a.invMass).reversed());
         b.velocity = b.velocity.plus(impulse.scale(b.invMass));
+
+
+        /*
+        float massSum = a.mass + b.mass;
+        float ratio = a.mass / massSum;
+        a.velocity = a.velocity.plus(impulse.scale(ratio).reversed());
+        b.velocity = b.velocity.plus(impulse.scale(ratio));
+        */
     }
 
     private Vector2d getInputVector(PlayerInput input) {
@@ -161,28 +184,45 @@ public class Showcase extends AnimationTimer {
     private static class Body {
 
         private final Polygon2d shape;
-        private final float invMass;
-        private Vector2d velocity;
-        private Vector2d force;
-        private Vector2d pos;
+        private final Material material;
 
+        private final float mass;
+        private final float invMass;
+
+        private Vector2d force;
+        private Vector2d velocity;
+
+        private Vector2d pos;
         private float rot;
 
-        private Body(Polygon2d shape, Vector2d pos, float mass) {
-            this.shape = shape;
-            this.invMass = mass == 0 ? 0 : 1f / mass;
+        private Body(Polygon2d shape, Vector2d pos, Material material) {
 
+            this.shape = shape;
+            this.material = material;
+
+            this.mass = calculateMass(shape, material);
+            this.invMass = this.mass == 0 ? 0 : 1f / this.mass;
+
+            this.force = Vector2d.ZERO_VECTOR;
             this.velocity = Vector2d.ZERO_VECTOR;
+
             this.pos = pos;
             this.rot = 0;
         }
 
         public void integrate(float dt) {
-            pos = pos.plus(velocity.scale(dt).scale(invMass));
+            velocity = velocity.plus(force.scale(invMass * dt));
+            pos = pos.plus(velocity);
+            force = Vector2d.ZERO_VECTOR;
         }
 
         public Polygon2d getShape() {
             return shape.withOffset(pos);
+        }
+
+        private float calculateMass(Polygon2d shape, Material material) {
+            float area = 50; // todo: calculate from shape
+            return material.getDensity() * area;
         }
     }
 }

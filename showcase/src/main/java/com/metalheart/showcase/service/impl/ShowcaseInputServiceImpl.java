@@ -66,14 +66,17 @@ public class ShowcaseInputServiceImpl implements ShowcaseInputService {
 
     @Override
     public EventHandler<? super MouseEvent> getMouseClicked() {
-        return e -> mouseClicked = true;
+        return e -> {
+            System.out.println("Vector2d.of(" + e.getSceneX() + "f, " + e.getSceneY() + "f),");
+            mouseClicked = true;
+        };
     }
 
     @Override
     public Vector2d getMousePosition() {
         return Vector2d.of(
-                MouseInfo.getPointerInfo().getLocation().x,
-                MouseInfo.getPointerInfo().getLocation().y);
+            MouseInfo.getPointerInfo().getLocation().x,
+            MouseInfo.getPointerInfo().getLocation().y);
     }
 
     @Override
@@ -95,5 +98,4 @@ public class ShowcaseInputServiceImpl implements ShowcaseInputService {
 
         return input;
     }
-
 }
