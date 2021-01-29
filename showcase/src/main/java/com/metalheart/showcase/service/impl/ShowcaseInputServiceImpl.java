@@ -6,11 +6,13 @@ import com.metalheart.showcase.service.ShowcaseInputService;
 import java.awt.MouseInfo;
 import javafx.event.EventHandler;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ShowcaseInputServiceImpl implements ShowcaseInputService {
 
+    private boolean mouseClicked;
     private boolean wPressed;
     private boolean aPressed;
     private boolean sPressed;
@@ -63,6 +65,11 @@ public class ShowcaseInputServiceImpl implements ShowcaseInputService {
     }
 
     @Override
+    public EventHandler<? super MouseEvent> getMouseClicked() {
+        return e -> mouseClicked = true;
+    }
+
+    @Override
     public Vector2d getMousePosition() {
         return Vector2d.of(
                 MouseInfo.getPointerInfo().getLocation().x,
@@ -73,6 +80,14 @@ public class ShowcaseInputServiceImpl implements ShowcaseInputService {
     public PlayerInput getInput() {
 
         PlayerInput input = new PlayerInput();
+
+        if (mouseClicked) {
+            input.setLeftBtnClicked(true);
+            mouseClicked = false;
+        } else {
+            input.setLeftBtnClicked(false);
+        }
+
         input.setIsPressedW(wPressed);
         input.setIsPressedA(aPressed);
         input.setIsPressedS(sPressed);

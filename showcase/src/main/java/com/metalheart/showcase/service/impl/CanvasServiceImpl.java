@@ -38,7 +38,7 @@ public class CanvasServiceImpl implements CanvasService {
         Scene scene = new Scene(root, WIDTH, HEIGHT);
         scene.setOnKeyPressed(inputService.getKeyPressHandler());
         scene.setOnKeyReleased(inputService.getKeyReleaseHandler());
-
+        scene.setOnMouseClicked(inputService.getMouseClicked());
         return scene;
     }
 

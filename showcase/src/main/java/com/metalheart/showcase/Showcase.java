@@ -5,15 +5,18 @@ import com.metalheart.model.common.AABB2d;
 import com.metalheart.model.common.CollisionResult;
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.service.GeometryUtil;
 import com.metalheart.service.state.CollisionDetectionService;
 import com.metalheart.service.state.ShapeService;
 import com.metalheart.showcase.service.CanvasService;
 import com.metalheart.showcase.service.ShowcaseInputService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import javafx.animation.AnimationTimer;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import org.springframework.stereotype.Component;
+
+import static java.util.Arrays.asList;
 
 @Component
 public class Showcase extends AnimationTimer {
@@ -27,7 +30,7 @@ public class Showcase extends AnimationTimer {
     private Long previousAnimationAt;
 
     private Body incBody;
-    private Body refBody;
+    private List<Body> bodies;
 
     public Showcase(CanvasService canvasService,
                     ShowcaseInputService inputService,
@@ -37,8 +40,24 @@ public class Showcase extends AnimationTimer {
         this.inputService = inputService;
         this.shapeService = shapeService;
         this.collisionDetectionService = collisionDetectionService;
-        incBody = new Body(shapeService.playerShape(), Vector2d.of(100, 100), 1);
-        refBody = new Body(shapeService.wallShape(), canvasService.getCenter(), 1);
+        incBody = new Body(shapeService.playerShape(), Vector2d.of(100, 100), 10);
+        int sizeX = 1024;
+        int sizeY = 768;
+        int width = 100;
+        Polygon2d vert = new Polygon2d(
+            Vector2d.of(0 - width, 0),
+            Vector2d.of(0 - width, sizeY),
+            Vector2d.of(0, sizeY),
+            Vector2d.of(0, 0)
+        );
+        bodies = new ArrayList<>();
+        bodies.addAll(asList(
+            incBody,
+            new Body(shapeService.bulletShape(),  Vector2d.of(200, 400), 5),
+            new Body(shapeService.wallShape(),  Vector2d.of(400, 400), 0),
+            new Body(vert,  Vector2d.of(0, 0), 0),
+            new Body(vert,  Vector2d.of(sizeX + width, 0), 0)
+        ));
     }
 
     @Override
@@ -48,25 +67,47 @@ public class Showcase extends AnimationTimer {
         Vector2d center = canvasService.getCenter();
         Vector2d mousePos = inputService.getMousePosition();
 
-        incBody.velocity = incBody.velocity.plus(getInputVector());
+        PlayerInput input = inputService.getInput();
+        incBody.velocity = incBody.velocity.plus( getInputVector(input));
 
-        Polygon2d inc = incBody.integrate(1);
-        Polygon2d ref = refBody.integrate(1);
-        CollisionResult collisionResult = collisionDetectionService.detectCollision(inc, ref);
-        if (collisionResult.isCollide()) {
-            resolveCollision(incBody, refBody, collisionResult.getNormal());
+        if (input.getLeftBtnClicked()) {
+            System.out.println("!");
+            Body body = new Body(shapeService.wallShape(), mousePos, 5);
+            body.velocity = incBody.velocity;
+            bodies.add(body);
         }
 
-        // draw
+        Polygon2d[] rects = bodies.stream()
+            .map(body -> {
+                body.integrate(1);
+                return body.getShape();
+            })
+            .collect(Collectors.toList())
+            .toArray(new Polygon2d[0]);
 
-        GraphicsContext gc = canvasService.getGraphicsContext();
+        int unit = 5;
+        for (int i = 0; i < rects.length; i++) {
+
+            for (int j = 0; j < rects.length; j++) {
+
+                if(i == j) {
+                    continue;
+                }
+                CollisionResult collisionResult = collisionDetectionService.detectCollision(rects[i], rects[j]);
+                if (collisionResult.isCollide()) {
+                    resolveCollision(bodies.get(i), bodies.get(j), collisionResult.getNormal());
+                }
+            }
+        }
+
         canvasService.clear();
-
-        gc.setFill(Color.WHITE);
-        gc.setStroke(Color.WHITE);
-
-        canvasService.draw(inc, Color.BLUE);
-        canvasService.draw(ref, Color.WHITE);
+        for (int i = 0; i < rects.length; i++) {
+            Body body = bodies.get(i);
+            Vector2d velocity = body.velocity;
+            Vector2d c = AABB2d.of(body.getShape().getPoints()).getCenter();
+            canvasService.drawArrow(c, c.plus(velocity.scale(unit)), Color.RED);
+            canvasService.draw(body.getShape(), Color.WHITE);
+        }
     }
 
     void resolveCollision( Body a, Body b, Vector2d normal) {
@@ -90,18 +131,16 @@ public class Showcase extends AnimationTimer {
         // Прикладываем импульс силы
         Vector2d impulse = normal.scale(j);
         a.velocity = a.velocity.plus(impulse.scale(a.invMass).reversed());
-        b.velocity = a.velocity.plus(impulse.scale(a.invMass));
+        b.velocity = b.velocity.plus(impulse.scale(b.invMass));
     }
 
-    private Vector2d getInputVector() {
-
-        PlayerInput req = inputService.getInput();
+    private Vector2d getInputVector(PlayerInput input) {
 
         Vector2d direction = Vector2d.ZERO_VECTOR;
-        if (req.getIsPressedW()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1.reversed());
-        if (req.getIsPressedS()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1);
-        if (req.getIsPressedA()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0.reversed());
-        if (req.getIsPressedD()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0);
+        if (input.getIsPressedW()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1.reversed());
+        if (input.getIsPressedS()) direction = direction.plus(Vector2d.UNIT_VECTOR_D1);
+        if (input.getIsPressedA()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0.reversed());
+        if (input.getIsPressedD()) direction = direction.plus(Vector2d.UNIT_VECTOR_D0);
 
         return direction;
     }
@@ -118,24 +157,31 @@ public class Showcase extends AnimationTimer {
     }
 
 
+
     private static class Body {
 
         private final Polygon2d shape;
-        private final int invMass;
+        private final float invMass;
         private Vector2d velocity;
+        private Vector2d force;
         private Vector2d pos;
+
         private float rot;
 
-        private Body(Polygon2d shape, Vector2d pos, int mass) {
+        private Body(Polygon2d shape, Vector2d pos, float mass) {
             this.shape = shape;
-            this.invMass = 1 / mass;
+            this.invMass = mass == 0 ? 0 : 1f / mass;
+
             this.velocity = Vector2d.ZERO_VECTOR;
             this.pos = pos;
             this.rot = 0;
         }
 
-        public Polygon2d integrate(float dt) {
-            pos = pos.plus(velocity).scale(dt);
+        public void integrate(float dt) {
+            pos = pos.plus(velocity.scale(dt).scale(invMass));
+        }
+
+        public Polygon2d getShape() {
             return shape.withOffset(pos);
         }
     }
