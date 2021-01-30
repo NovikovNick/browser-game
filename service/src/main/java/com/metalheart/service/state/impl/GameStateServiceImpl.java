@@ -10,7 +10,6 @@ import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.model.game.RigidBody;
 import com.metalheart.model.game.Transform;
-import com.metalheart.model.struct.SweepAndPrune;
 import com.metalheart.service.GeometryUtil;
 import com.metalheart.service.input.PlayerInputService;
 import com.metalheart.service.state.CollisionDetectionService;
@@ -21,7 +20,6 @@ import com.metalheart.service.state.UsernameService;
 import com.metalheart.service.state.WallService;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -34,7 +32,6 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -283,24 +280,6 @@ public class GameStateServiceImpl implements GameStateService {
                 })
                 .filter(Objects::nonNull)
                 .collect(toSet());
-
-
-            SweepAndPrune.collide(
-                players.values().stream().map(Player::getGameObject).collect(Collectors.toList()),
-                (o1, o2) -> {
-
-                    CollisionResult collision = collisionService.detectCollision(
-                        o1.getRigidBody().getTransformed(),
-                        o2.getRigidBody().getTransformed());
-
-                    if (collision.isCollide()) {
-                       /* explosions.add(center);
-                        Vector2d normal = collision.getNormal();
-                        transformed = GeometryUtil.rotate(shape.withOffset(center), -angleRadian, center);
-                        center = center.plus(normal.reversed().scale(collision.getDepth()));*/
-                    }
-                }
-            );
 
             Map<String, Long> ack = new HashMap<>();
             ackSN.forEach((sessionId, n) -> {

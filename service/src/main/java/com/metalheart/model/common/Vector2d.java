@@ -28,6 +28,10 @@ public class Vector2d {
         return new Vector2d(d0 + v.d0, d1 + v.d1);
     }
 
+    public Vector2d minus(Vector2d v) {
+        return new Vector2d(d0 - v.d0, d1 - v.d1);
+    }
+
     public float dotProduct(Vector2d v) {
         return d0 * v.d0 +  d1 * v.d1;
     }
