@@ -1,6 +1,6 @@
 package com.metalheart.model.game;
 
-import com.metalheart.model.common.Vector2d;
+import com.metalheart.service.tmp.Body;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,7 +14,7 @@ public class Player implements Cloneable {
     private String username;
     private String id;
 
-    private GameObject gameObject;
+    private Body gameObject;
 
     @Override
     public Player clone() {

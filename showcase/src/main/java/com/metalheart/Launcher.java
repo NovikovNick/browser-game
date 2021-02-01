@@ -19,7 +19,7 @@ public class Launcher extends Application {
 
         stage.setScene(canvasService.createScene());
         stage.centerOnScreen();
-        stage.setFullScreen(true);
+        // stage.setFullScreen(true);
         stage.show();
 
         showcase.start();

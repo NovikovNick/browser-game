@@ -7,6 +7,7 @@ import com.metalheart.service.tmp.CollisionDetector;
 import com.metalheart.service.tmp.CollisionPair;
 import com.metalheart.service.tmp.Manifold;
 import com.metalheart.service.tmp.NarrowPhaseAlgorithm;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,7 @@ public class CollisionDetectorImpl implements CollisionDetector {
     }
 
     @Override
-    public Set<Manifold> findCollision(Iterable<Body> bodies) {
+    public Set<Manifold> findCollision(Collection<Body> bodies) {
 
         Set<Manifold> res = new HashSet<>();
         Set<CollisionPair> pairs = broadPhaseAlgorithm.findPairs(bodies);

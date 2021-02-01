@@ -97,11 +97,11 @@ public class Showcase extends AnimationTimer {
 
         bodies = new ArrayList<>();
         bodies.addAll(asList(
-            incBody,
-            new Body(bodiesSq.incrementAndGet(),  WALL_1, Material.STATIC, Vector2d.ZERO_VECTOR),
-            new Body(bodiesSq.incrementAndGet(),  WALL_2, Material.STATIC, Vector2d.ZERO_VECTOR),
-            new Body(bodiesSq.incrementAndGet(),  WALL_3, Material.STATIC, Vector2d.ZERO_VECTOR),
-            new Body(bodiesSq.incrementAndGet(),  WALL_4, Material.STATIC, Vector2d.ZERO_VECTOR)
+            incBody
+            /*, new Body(bodiesSq.incrementAndGet(),  WALL_1, Material.STATIC, Vector2d.ZERO_VECTOR)
+            , new Body(bodiesSq.incrementAndGet(),  WALL_2, Material.STATIC, Vector2d.ZERO_VECTOR)
+            , new Body(bodiesSq.incrementAndGet(),  WALL_3, Material.STATIC, Vector2d.ZERO_VECTOR)
+            , new Body(bodiesSq.incrementAndGet(),  WALL_4, Material.STATIC, Vector2d.ZERO_VECTOR)*/
         ));
     }
 
@@ -122,17 +122,17 @@ public class Showcase extends AnimationTimer {
             Vector2d dir = GeometryUtil.rotate(Vector2d.UNIT_VECTOR_D0, angleRadian, Vector2d.ZERO_VECTOR);
             Body bullet = new Body(
                 bodiesSq.incrementAndGet(),
-                ARROW,
-                Material.SUPER_BALL,
-                start.plus(dir.scale(100)));
-            bullet.setForce(dir.normalize().scale(SPEED * 50));
+                shapeService.playerShape(),
+                Material.METAL,
+                mousePos);
+            //bullet.setForce(dir.normalize().scale(SPEED * 50));
             bodies.add(bullet);
         }
 
         // integrate
         for (Body body : bodies) {
             if (body.getMass() != 0) {
-                body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(GRAVITY)));
+                //body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(GRAVITY)));
             }
             body.setVelocity(body.getVelocity().plus(body.getForce().scale(body.getInvMass() * dt)));
             body.setPos(body.getPos().plus(body.getVelocity()));

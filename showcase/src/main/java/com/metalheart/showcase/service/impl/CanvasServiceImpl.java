@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class CanvasServiceImpl implements CanvasService {
 
     private static final int WIDTH = 1920;
-    private static final int HEIGHT = 1080;
+    private static final int HEIGHT = 700;
 
     private final ShowcaseInputService inputService;
 

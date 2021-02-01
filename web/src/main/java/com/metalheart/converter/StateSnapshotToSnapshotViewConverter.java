@@ -7,6 +7,7 @@ import com.metalheart.model.game.Player;
 import com.metalheart.model.response.GameObjectView;
 import com.metalheart.model.response.PlayerView;
 import com.metalheart.model.response.SnapshotView;
+import com.metalheart.service.tmp.Body;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.core.convert.converter.Converter;
@@ -60,6 +61,17 @@ public class StateSnapshotToSnapshotViewConverter implements Converter<StateSnap
                 source.getTransform().getPosition().getD1()
             })
             .rot(source.getTransform().getRotationAngleRadian())
+            .build();
+    }
+
+    private GameObjectView convert(Body source) {
+        return GameObjectView.builder()
+            .id(source.getId() + "")
+            .pos(new float[]{
+                source.getPos().getD0(),
+                source.getPos().getD1()
+            })
+            .rot(0)
             .build();
     }
 }

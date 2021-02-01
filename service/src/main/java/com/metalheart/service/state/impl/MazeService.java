@@ -4,31 +4,31 @@ import com.metalheart.maze.Maze;
 import com.metalheart.maze.MazeDoorDirection;
 import com.metalheart.maze.RecursiveBacktrackerMazeBuilder;
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.model.game.GameObject;
-import com.metalheart.service.state.GameObjectService;
-import com.metalheart.service.state.ShapeService;
 import com.metalheart.service.state.WallService;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MazeService implements WallService {
 
-
-    private final GameObjectService gameObjectService;
-    private final ShapeService shapeService;
-
-
-    public MazeService(GameObjectService gameObjectService, ShapeService shapeService) {
-        this.gameObjectService = gameObjectService;
-        this.shapeService = shapeService;
+    public MazeService() {
     }
 
     @Override
-    public List<GameObject> generateWalls() {
+    public List<Vector2d> generateWalls() {
+        List<Vector2d> list = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            list.add(Vector2d.of(i * 100 - 300, 200));
+            list.add(Vector2d.of(i * 100 - 300, -300));
+            list.add(Vector2d.of(-400, i * 100 - 300));
+            list.add(Vector2d.of(300, i * 100 - 300));
+        }
+        return list;
+    }
+
+    @Override
+    public List<Vector2d> generateMaze() {
 
         RecursiveBacktrackerMazeBuilder mazeBuilder = new RecursiveBacktrackerMazeBuilder()
             .setWidth(5)
@@ -41,19 +41,16 @@ public class MazeService implements WallService {
         Maze maze = new Maze();
         while (!mazeBuilder.isFinished((maze = mazeBuilder.buildNextStep(maze)))){}
 
-
-        List<GameObject> walls = new ArrayList<>();
+        List<Vector2d> walls = new ArrayList<>();
 
         maze.getData().forEach((point, cell) -> {
 
             for (int x = 0; x < 4; x++) {
                 for (int y = 0; y < 4; y++) {
 
-                    GameObject go = gameObjectService.newGameObject(Vector2d.of(
+                    Vector2d go = Vector2d.of(
                         point.getD0() * 400 +  x * 100,
-                        point.getD1() * -400 +  y * 100),
-                        0,
-                        shapeService.wallShape());
+                        point.getD1() * -400 +  y * 100);
 
                     if ((x == 0 || x == 3) && (y == 0 || y == 3)) {
                         walls.add(go);

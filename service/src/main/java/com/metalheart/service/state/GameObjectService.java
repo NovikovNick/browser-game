@@ -3,12 +3,13 @@ package com.metalheart.service.state;
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.GameObject;
+import com.metalheart.service.tmp.Body;
 
 public interface GameObjectService {
 
     GameObject transform(GameObject obj, Vector2d position, float rotationAngleRadian);
 
-    GameObject newGameObject(Vector2d position, float rotationAngleRadian, Polygon2d shape);
+    Body newWall(Vector2d position, float rotationAngleRadian);
 
-    GameObject withOrigin(Vector2d origin, GameObject obj);
+    Body newPlayer(Vector2d position, float rotationAngleRadian);
 }

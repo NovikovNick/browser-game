@@ -1,17 +1,14 @@
 package com.metalheart.service.output.impl;
 
 import com.metalheart.model.PlayerSnapshot;
-import com.metalheart.model.game.GameObject;
 import com.metalheart.service.output.PlayerSnapshotDeltaService;
+import com.metalheart.service.tmp.Body;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
-
-import static java.util.stream.Collectors.toList;
 
 @Service
 public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaService {
@@ -22,7 +19,7 @@ public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaServic
     public PlayerSnapshot calculateDelta(PlayerSnapshot base, List<PlayerSnapshot> sent) {
 
         PlayerSnapshot res = PlayerSnapshot.builder().removed(new ArrayList<>()).build();
-        Set<GameObject> walls = new HashSet<>();
+        Set<Body> walls = new HashSet<>();
 
         for (PlayerSnapshot snapshot : sent) {
 

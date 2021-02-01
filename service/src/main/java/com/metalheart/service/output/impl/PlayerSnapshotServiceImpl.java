@@ -7,6 +7,7 @@ import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.service.output.PlayerSnapshotService;
+import com.metalheart.service.tmp.Body;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +39,7 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
             Map<String, Player> players = state.getPlayers();
             Set<Bullet> projectiles = state.getProjectiles();
             List<Vector2d> explosions = state.getExplosions();
-            List<GameObject> walls = state.getWalls();
+            List<Body> walls = state.getWalls();
 
             players.forEach((id, player) -> {
 
@@ -56,17 +57,17 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
 
 
                 List<String> removedWalls = new ArrayList<>();
-                List<GameObject> playerWalls = new ArrayList<>();
+                List<Body> playerWalls = new ArrayList<>();
 
-                for (GameObject wall : walls) {
-                    Vector2d playerPos = player.getGameObject().getTransform().getPosition();
-                    Vector2d wallPos = wall.getTransform().getPosition();
+                for (Body wall : walls) {
+                    Vector2d playerPos = player.getGameObject().getPos();
+                    Vector2d wallPos = wall.getPos();
 
                     if (Math.abs(playerPos.getD0() - wallPos.getD0()) < FIELD_OF_VIEW
                         && Math.abs(playerPos.getD1() - wallPos.getD1()) < FIELD_OF_VIEW) {
                         playerWalls.add(wall);
                     } else {
-                        removedWalls.add(wall.getId());
+                        removedWalls.add(wall.getId() + "");
                     }
                 }
 
