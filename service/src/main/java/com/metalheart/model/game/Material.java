@@ -13,6 +13,8 @@ public enum Material {
 
     private final float density;
     private final float restitution;
+    private final float staticFriction = 1;
+    private final float dynamicFriction = 0.8f;
 
     Material(float density, float restitution) {
         this.density = density;
@@ -25,5 +27,13 @@ public enum Material {
 
     public float getRestitution() {
         return restitution;
+    }
+
+    public float getStaticFriction() {
+        return staticFriction;
+    }
+
+    public float getDynamicFriction() {
+        return dynamicFriction;
     }
 }

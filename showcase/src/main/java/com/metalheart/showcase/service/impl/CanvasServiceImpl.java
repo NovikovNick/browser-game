@@ -10,14 +10,13 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Line;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CanvasServiceImpl implements CanvasService {
 
     private static final int WIDTH = 1920;
-    private static final int HEIGHT = 700;
+    private static final int HEIGHT = 900;
 
     private final ShowcaseInputService inputService;
 
@@ -99,6 +98,14 @@ public class CanvasServiceImpl implements CanvasService {
         );
 
         draw(from, color);
+    }
+
+    @Override
+    public void drawArrow(String title, Vector2d from, Vector2d to, Color color) {
+        drawArrow(from, to, color);
+        GraphicsContext gc = getGraphicsContext();
+        gc.setFill(color);
+        gc.fillText(title, to.getD0(), to.getD1());
     }
 
     @Override

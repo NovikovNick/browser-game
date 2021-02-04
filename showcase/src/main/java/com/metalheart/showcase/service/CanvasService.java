@@ -22,5 +22,7 @@ public interface CanvasService {
 
     void drawArrow(Vector2d from, Vector2d to, Color color);
 
+    void drawArrow(String title, Vector2d from, Vector2d to, Color color);
+
     void draw(Polygon2d p, Color color);
 }

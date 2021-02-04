@@ -27,27 +27,27 @@ import static java.util.Arrays.asList;
 public class Showcase extends AnimationTimer {
 
     public static final int SPEED = 100;
-    public static final float GRAVITY  = 9;
-    public static final int VECTOR_UNIT = 5;
-    public static final Polygon2d WALL_1 = new Polygon2d(
+    public static final float GRAVITY  = 30;
+    public static final int VECTOR_UNIT = 25;
+    public static final Polygon2d WALL_RIGHT = new Polygon2d(
         Vector2d.of(1902.0f, 753.0f),
         Vector2d.of(1856.0f, 758.0f),
         Vector2d.of(1856.0f, 5.0f),
         Vector2d.of(1900.0f, 3.0f)
     );
-    public static final Polygon2d WALL_2 = new Polygon2d(
+    public static final Polygon2d WALL_LEFT = new Polygon2d(
         Vector2d.of(5.0f, 757.0f),
         Vector2d.of(29.0f, 758.0f),
         Vector2d.of(27.0f, 6.0f),
         Vector2d.of(8.0f, 8.0f)
     );
-    public static final Polygon2d WALL_3 = new Polygon2d(
+    public static final Polygon2d WALL_BOTTOM = new Polygon2d(
         Vector2d.of(1841.0f, 759.0f),
         Vector2d.of(1839.0f, 719.0f),
         Vector2d.of(40.0f, 721.0f),
         Vector2d.of(44.0f, 758.0f)
     );
-    public static final Polygon2d WALL_4 = new Polygon2d(
+    public static final Polygon2d WALL_TOP = new Polygon2d(
         Vector2d.of(34.0f, 2.0f),
         Vector2d.of(38.0f, 32.0f),
         Vector2d.of(1844.0f, 35.0f),
@@ -98,10 +98,10 @@ public class Showcase extends AnimationTimer {
         bodies = new ArrayList<>();
         bodies.addAll(asList(
             incBody
-            /*, new Body(bodiesSq.incrementAndGet(),  WALL_1, Material.STATIC, Vector2d.ZERO_VECTOR)
-            , new Body(bodiesSq.incrementAndGet(),  WALL_2, Material.STATIC, Vector2d.ZERO_VECTOR)
-            , new Body(bodiesSq.incrementAndGet(),  WALL_3, Material.STATIC, Vector2d.ZERO_VECTOR)
-            , new Body(bodiesSq.incrementAndGet(),  WALL_4, Material.STATIC, Vector2d.ZERO_VECTOR)*/
+            // , new Body(bodiesSq.incrementAndGet(), WALL_RIGHT, Material.STATIC, Vector2d.ZERO_VECTOR)
+            // , new Body(bodiesSq.incrementAndGet(), WALL_LEFT, Material.STATIC, Vector2d.ZERO_VECTOR)
+            , new Body(bodiesSq.incrementAndGet(), WALL_BOTTOM, Material.STATIC, Vector2d.ZERO_VECTOR)
+            // , new Body(bodiesSq.incrementAndGet(), WALL_TOP, Material.STATIC, Vector2d.ZERO_VECTOR)
         ));
     }
 
@@ -132,7 +132,7 @@ public class Showcase extends AnimationTimer {
         // integrate
         for (Body body : bodies) {
             if (body.getMass() != 0) {
-                //body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(GRAVITY)));
+                body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(GRAVITY)));
             }
             body.setVelocity(body.getVelocity().plus(body.getForce().scale(body.getInvMass() * dt)));
             body.setPos(body.getPos().plus(body.getVelocity()));
@@ -143,6 +143,9 @@ public class Showcase extends AnimationTimer {
         Set<Manifold> manifolds = collisionDetector.findCollision(bodies);
         collisionResolver.resolve(manifolds);
 
+        canvasService.clear();
+
+
         // draw
         canvasService.clear();
         for (Body body : bodies) {
@@ -150,6 +153,54 @@ public class Showcase extends AnimationTimer {
             Vector2d c = AABB2d.of(body.getShape().getPoints()).getCenter();
             canvasService.drawArrow(c, c.plus(velocity.scale(VECTOR_UNIT)), Color.RED);
             canvasService.draw(body.getShape(), Color.WHITE);
+        }
+
+        for (Manifold m : manifolds) {
+
+            Vector2d normal = m.getNormal();
+            Body a = m.getA();
+            Body b = m.getB();
+
+            Vector2d rv = b.getVelocity().minus(a.getVelocity());
+
+            Vector2d c = AABB2d.of(a.getShape().getPoints()).getCenter();
+            canvasService.drawArrow(c, c.plus(normal.scale(VECTOR_UNIT)), Color.GREEN);
+            //canvasService.drawArrow(c, c.plus(rv.scale(VECTOR_UNIT)), Color.BLUE);
+            // canvasService.drawArrow(c, c.plus(tangent.scale(jt * VECTOR_UNIT)), Color.AQUA);
+        }
+
+
+        {
+
+            Vector2d center = canvasService.getCenter();
+            float angleRadian = GeometryUtil.getAngleRadian(center, mousePos);
+            Vector2d dir = GeometryUtil.rotate(Vector2d.UNIT_VECTOR_D0, angleRadian, Vector2d.ZERO_VECTOR).normalize();
+
+
+
+            Vector2d normal = Vector2d.UNIT_VECTOR_D1;
+            Vector2d aV = dir.scale(100);
+            Vector2d bV = Vector2d.UNIT_VECTOR_D0.scale(100);
+            Vector2d rv = bV.minus(aV);
+            Vector2d tangent = rv.minus(normal.scale(rv.dotProduct(normal)));
+
+            float velAlongNormal = rv.dotProduct(normal);
+
+
+            // Вычисляем скаляр импульса силы
+            float j = -velAlongNormal / (0.8f);
+
+            // Прикладываем импульс силы
+            Vector2d impulse = velAlongNormal > 0 ? Vector2d.ZERO_VECTOR : normal.scale(j);
+
+
+            canvasService.drawArrow("aV", center, center.plus(aV), Color.YELLOW);
+            canvasService.drawArrow("bV", center, center.plus(bV), Color.YELLOW);
+            canvasService.drawArrow("impulse", center, center.plus(impulse), Color.BLUE);
+            canvasService.drawArrow("normal", center, center.plus(normal), Color.RED);
+
+            canvasService.drawArrow("aV'", center, center.plus(aV.minus(impulse)), Color.GREEN);
+            canvasService.drawArrow("bV'", center, center.plus(bV.plus(impulse)), Color.GREEN);
         }
     }
 

@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
@@ -188,7 +187,7 @@ public class GameStateServiceImpl implements GameStateService {
             bodies.addAll(walls);
             for (Body body : bodies) {
                 if (body.getMass() != 0) {
-                    // body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(GRAVITY)));
+                    // body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(0.02f * tickDelay)));
                 }
                 body.setVelocity(body.getVelocity().plus(body.getForce().scale(body.getInvMass() * tickDelay)));
                 body.setPos(body.getPos().plus(body.getVelocity()));

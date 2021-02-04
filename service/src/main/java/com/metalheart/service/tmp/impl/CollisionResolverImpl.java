@@ -7,6 +7,9 @@ import com.metalheart.service.tmp.Manifold;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
+
 @Service
 public class CollisionResolverImpl implements CollisionResolver {
 
@@ -38,8 +41,7 @@ public class CollisionResolverImpl implements CollisionResolver {
         float e = Math.min(a.getMaterial().getRestitution(), b.getMaterial().getRestitution());
 
         // Вычисляем скаляр импульса силы
-        float j = -(1 + e) * velAlongNormal;
-        j /= a.getInvMass() + b.getInvMass();
+        float j = (-(1 + e) * velAlongNormal) / (a.getInvMass() + b.getInvMass());
 
         // Прикладываем импульс силы
         float massSum = a.getMass() + b.getMass();
@@ -54,5 +56,25 @@ public class CollisionResolverImpl implements CollisionResolver {
         Vector2d correction = normal.scale(Math.max( depth - slop, 0.0f ) / (a.getInvMass() + b.getInvMass()) * percent);
         a.setPos(a.getPos().minus(correction.scale(a.getInvMass())));
         b.setPos(b.getPos().plus(correction.scale(b.getInvMass())));
+
+        // friction
+        Vector2d rv1 = b.getVelocity().minus(a.getVelocity());
+        Vector2d tangent = rv1.minus(normal.scale(rv1.dotProduct(normal))).normalize();
+        float jt = -rv1.dotProduct(tangent) / (a.getInvMass() + b.getInvMass());
+
+        float mu = (float) sqrt(pow(a.getMaterial().getStaticFriction(), 2) + pow(b.getMaterial().getStaticFriction(), 2));
+
+        // Ограничиваем величину трения и создаём вектор импульса силы
+        Vector2d frictionImpulse = Vector2d.ZERO_VECTOR;
+        if(Math.abs( jt ) < j * mu) {
+            frictionImpulse = tangent.scale(jt);
+        } else {
+            float dynamicFriction  = (float) sqrt(pow(a.getMaterial().getDynamicFriction(), 2) + pow(b.getMaterial().getDynamicFriction(), 2));
+            frictionImpulse = tangent.scale(-j * dynamicFriction);
+        }
+
+        // Прикладываем
+        a.setVelocity(a.getVelocity().minus(frictionImpulse.scale(a.getInvMass())));
+        b.setVelocity(b.getVelocity().plus(frictionImpulse.scale(b.getInvMass())));
     }
 }
