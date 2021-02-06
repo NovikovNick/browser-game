@@ -2,7 +2,7 @@ package com.metalheart.service.output.impl;
 
 import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.service.output.PlayerSnapshotDeltaService;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +19,7 @@ public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaServic
     public PlayerSnapshot calculateDelta(PlayerSnapshot base, List<PlayerSnapshot> sent) {
 
         PlayerSnapshot res = PlayerSnapshot.builder().removed(new ArrayList<>()).build();
-        Set<Body> walls = new HashSet<>();
+        Set<GameObject> walls = new HashSet<>();
 
         for (PlayerSnapshot snapshot : sent) {
 

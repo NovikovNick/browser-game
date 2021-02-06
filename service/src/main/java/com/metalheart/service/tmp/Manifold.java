@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 public class Manifold {
-    private final Body a, b;
+    private final GameObject a, b;
     private final Vector2d normal;
     private final float penetration;
 }

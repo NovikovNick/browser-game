@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(of = "id")
-public class Body {
+public class GameObject implements Cloneable{
 
     private final long id;
     private final Polygon2d shape;
@@ -23,7 +23,7 @@ public class Body {
 
     private Vector2d pos;
 
-    public Body(long id, Polygon2d shape, Material material, Vector2d pos) {
+    public GameObject(long id, Polygon2d shape, Material material, Vector2d pos) {
 
         this.id = id;
 
@@ -51,5 +51,9 @@ public class Body {
         float area = (max.getD0() - min.getD0()) * (max.getD1() - min.getD1());
         float mass = material.getDensity() * area / 50;
         return mass;
+    }
+
+    public GameObject clone() {
+        return new GameObject(id, shape, material, pos);
     }
 }

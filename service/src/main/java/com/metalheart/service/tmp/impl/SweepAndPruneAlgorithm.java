@@ -3,17 +3,15 @@ package com.metalheart.service.tmp.impl;
 import com.metalheart.model.common.AABB2d;
 import com.metalheart.model.common.Line;
 import com.metalheart.service.GeometryUtil;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import com.metalheart.service.tmp.BroadPhaseAlgorithm;
 import com.metalheart.service.tmp.CollisionPair;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +19,7 @@ import org.springframework.stereotype.Service;
 public class SweepAndPruneAlgorithm implements BroadPhaseAlgorithm {
 
     @Override
-    public Set<CollisionPair> findPairs(Collection<Body> bodies) {
+    public Set<CollisionPair> findPairs(Collection<GameObject> bodies) {
 
         Set<CollisionPair> res = new HashSet<>();
 
@@ -46,8 +44,8 @@ public class SweepAndPruneAlgorithm implements BroadPhaseAlgorithm {
                         continue;
                     }
 
-                    Body fst = sorted[sorted[i].body.getMass() != 0 ? i : j].body;
-                    Body snd = sorted[sorted[i].body.getMass() != 0 ? j : i].body;
+                    GameObject fst = sorted[sorted[i].body.getMass() != 0 ? i : j].body;
+                    GameObject snd = sorted[sorted[i].body.getMass() != 0 ? j : i].body;
 
                     res.add(new CollisionPair(fst, snd));
 
@@ -90,10 +88,10 @@ public class SweepAndPruneAlgorithm implements BroadPhaseAlgorithm {
 
     private static class Entry {
 
-        final Body body;
+        final GameObject body;
         final AABB2d aabb;
 
-        private Entry(Body body) {
+        private Entry(GameObject body) {
             this.body = body;
             this.aabb = AABB2d.of(body.getShape().getPoints());
         }

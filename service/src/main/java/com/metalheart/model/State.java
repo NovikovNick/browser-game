@@ -1,10 +1,8 @@
 package com.metalheart.model;
 
-import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
-import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,8 +17,8 @@ public class State implements Cloneable {
     private Map<String, Long> playersAckSN;
     private Map<String, Player> players;
     private Set<Bullet> projectiles;
-    private List<Vector2d> explosions;
-    private List<Body> walls;
+    private List<GameObject> explosions;
+    private List<GameObject> walls;
     private List<String> removedGameObjectIds;
 
     @Override

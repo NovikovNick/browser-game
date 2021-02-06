@@ -1,7 +1,7 @@
 package com.metalheart.service.tmp.impl;
 
 import com.metalheart.model.common.CollisionResult;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import com.metalheart.service.tmp.BroadPhaseAlgorithm;
 import com.metalheart.service.tmp.CollisionDetector;
 import com.metalheart.service.tmp.CollisionPair;
@@ -29,7 +29,7 @@ public class CollisionDetectorImpl implements CollisionDetector {
     }
 
     @Override
-    public Set<Manifold> findCollision(Collection<Body> bodies) {
+    public Set<Manifold> findCollision(Collection<GameObject> bodies) {
 
         Set<Manifold> res = new HashSet<>();
         Set<CollisionPair> pairs = broadPhaseAlgorithm.findPairs(bodies);

@@ -102,10 +102,8 @@ function Board({character, enemies, projectiles, explosions, walls}) {
             {enemies.map((item, i) => <Player key={i} character={item} isEnemy={true} color={"red"}/>)}
             {walls.map((wall, i) => <Wall key={i} gameObject={wall}/>)}
             {projectiles.map((projectile, i) => projectile && <Polygon key={i} polygon={projectile.shape} color={"red"}/>)}
+            {explosions.map((explosion, i) => <Point key={i} data={explosion.point} radius={(now - explosion.timestamp) / 1000 * 60} color={"yellow"}/>)}
 
-            {/*
-            {explosions.map((explosion, i) => <Point offset={offset} key={i} data={[explosion.point.d0, explosion.point.d1]} radius={(now - explosion.timestamp) / 1000 * 60} color={"yellow"}/>)}
-            */}
         </svg>
     );
 }

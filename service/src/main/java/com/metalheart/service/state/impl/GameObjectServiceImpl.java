@@ -1,15 +1,11 @@
 package com.metalheart.service.state.impl;
 
-import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Material;
-import com.metalheart.model.game.RigidBody;
-import com.metalheart.model.game.Transform;
-import com.metalheart.service.GeometryUtil;
+import com.metalheart.model.game.Player;
 import com.metalheart.service.state.GameObjectService;
 import com.metalheart.service.state.ShapeService;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Service;
 
@@ -25,50 +21,26 @@ public class GameObjectServiceImpl implements GameObjectService {
     }
 
     @Override
-    public GameObject transform(GameObject obj, Vector2d position, float rotationAngleRadian) {
-
-        Polygon2d shape = obj.getRigidBody().getShape();
-        Polygon2d transformed = GeometryUtil.rotate(shape.withOffset(position), rotationAngleRadian, position);
-
-        return GameObject.builder()
-            .id(obj.getId())
-            .transform(Transform.builder()
-                .position(position)
-                .rotationAngleRadian(rotationAngleRadian)
-                .build())
-            .rigidBody(RigidBody.builder()
-                .shape(shape)
-                .transformed(transformed)
-                .build())
-            .build();
+    public GameObject newWall(Vector2d position, float rotationAngleRadian) {
+        long id = gameObjectSequence.incrementAndGet();
+        return new GameObject(id, shapeService.wallShape(), Material.STATIC, position);
     }
 
     @Override
-    public Body newWall(Vector2d position, float rotationAngleRadian) {
+    public GameObject newBullet(Vector2d position, float rotationAngleRadian) {
         long id = gameObjectSequence.incrementAndGet();
-        return new Body(id, shapeService.wallShape(), Material.STATIC, position);
+        return new GameObject(id, shapeService.bulletShape(), Material.METAL, position);
     }
 
     @Override
-    public Body newPlayer(Vector2d position, float rotationAngleRadian) {
+    public GameObject newExplosion(Vector2d position, float rotationAngleRadian) {
         long id = gameObjectSequence.incrementAndGet();
-        return new Body(id, shapeService.playerShape(), Material.BOUNCY_BALL, position);
+        return new GameObject(id, shapeService.bulletShape(), Material.STATIC, position);
     }
 
-    private GameObject getGameObject(String id, Vector2d position, float rotationAngleRadian, Polygon2d shape) {
-
-        Polygon2d transformed = GeometryUtil.rotate(shape.withOffset(position), rotationAngleRadian, position);
-
-        return GameObject.builder()
-            .id(id)
-            .transform(Transform.builder()
-                .position(position)
-                .rotationAngleRadian(rotationAngleRadian)
-                .build())
-            .rigidBody(RigidBody.builder()
-                .shape(shape)
-                .transformed(transformed)
-                .build())
-            .build();
+    @Override
+    public Player newPlayer(Vector2d position, float rotationAngleRadian) {
+        long id = gameObjectSequence.incrementAndGet();
+        return new Player(id, shapeService.playerShape(), Material.BOUNCY_BALL, position);
     }
 }

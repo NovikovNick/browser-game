@@ -4,10 +4,9 @@ import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.State;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
-import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.service.output.PlayerSnapshotService;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,8 +37,8 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
 
             Map<String, Player> players = state.getPlayers();
             Set<Bullet> projectiles = state.getProjectiles();
-            List<Vector2d> explosions = state.getExplosions();
-            List<Body> walls = state.getWalls();
+            List<GameObject> explosions = state.getExplosions();
+            List<GameObject> walls = state.getWalls();
 
             players.forEach((id, player) -> {
 
@@ -47,20 +46,15 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
 
                 List<Player> enemies = players.values().stream()
                     .filter(enemy -> !player.equals(enemy))
-                    .map(enemy -> Player.builder()
-                        .id(enemy.getId())
-                        .sessionId(enemy.getSessionId())
-                        .username(enemy.getUsername())
-                        .gameObject(enemy.getGameObject())
-                        .build())
+                    .map(enemy -> enemy.clone())
                     .collect(Collectors.toList());
 
 
                 List<String> removedWalls = new ArrayList<>();
-                List<Body> playerWalls = new ArrayList<>();
+                List<GameObject> playerWalls = new ArrayList<>();
 
-                for (Body wall : walls) {
-                    Vector2d playerPos = player.getGameObject().getPos();
+                for (GameObject wall : walls) {
+                    Vector2d playerPos = player.getPos();
                     Vector2d wallPos = wall.getPos();
 
                     if (Math.abs(playerPos.getD0() - wallPos.getD0()) < FIELD_OF_VIEW

@@ -153,9 +153,14 @@ let timerId = setTimeout(function tick() {
             }
 
             // explosions
-            const explosions = []; /*fst.explosions.map(i => {
-                return {timestamp: now, point: i}
-            })*/
+            const explosions = [];
+            {
+                Array.isArray(fst.explosions) && fst.explosions.map(item => {
+
+                    const pos = [item.pos[0] - offset[0], item.pos[1] - offset[1]];
+                    explosions.push({timestamp: now, point: pos})
+                })
+            }
 
             // walls
             const updatedWalls = [];

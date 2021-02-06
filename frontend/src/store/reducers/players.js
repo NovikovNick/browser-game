@@ -50,10 +50,6 @@ export default function players(state = initialState, action) {
         }
         case types.UPDATE_STATE: {
 
-            if (action.walls.length) {
-                // console.log("Received: " + action.walls.length)
-            }
-
             return {
                 ...state,
                 character: {
@@ -62,11 +58,10 @@ export default function players(state = initialState, action) {
                 },
                 enemies: action.enemies,
                 projectiles: action.projectiles,
-                walls: [...action.walls]
-                /*,
+                walls: [...action.walls],
                 explosions: [...state.explosions]
                     .filter(i => i && (now - i.timestamp) < 1000)
-                    .concat(action.explosions)*/
+                    .concat(action.explosions)
             }
         }
         case types.UPDATE_SNAPSHOTS: {

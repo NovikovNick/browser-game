@@ -1,28 +1,27 @@
 package com.metalheart.model.game;
 
-import com.metalheart.service.tmp.Body;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import com.metalheart.model.common.Polygon2d;
+import com.metalheart.model.common.Vector2d;
+import com.metalheart.service.tmp.GameObject;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@Builder
-@EqualsAndHashCode(of = {"sessionId", "id"})
-public class Player implements Cloneable {
+@Getter
+@Setter
+public class Player extends GameObject {
 
     private String sessionId;
     private String username;
-    private String id;
 
-    private Body gameObject;
+    public Player(long id, Polygon2d shape, Material material, Vector2d pos) {
+        super(id, shape, material, pos);
+    }
 
     @Override
     public Player clone() {
-        return Player.builder()
-            .id(id)
-            .sessionId(sessionId)
-            .username(username)
-            .gameObject(gameObject)
-            .build();
+        Player cloned = new Player(getId(), getShape(), getMaterial(), getPos());
+        cloned.setSessionId(sessionId);
+        cloned.setUsername(username);
+        return cloned;
     }
 }

@@ -2,6 +2,7 @@ package com.metalheart.service.state.impl;
 
 import com.metalheart.model.PlayerInput;
 import com.metalheart.model.State;
+import com.metalheart.model.common.AABB2d;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.Player;
@@ -12,7 +13,7 @@ import com.metalheart.service.state.GameStateService;
 import com.metalheart.service.state.ShapeService;
 import com.metalheart.service.state.UsernameService;
 import com.metalheart.service.state.WallService;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import com.metalheart.service.tmp.CollisionDetector;
 import com.metalheart.service.tmp.CollisionResolver;
 import com.metalheart.service.tmp.Manifold;
@@ -71,7 +72,7 @@ public class GameStateServiceImpl implements GameStateService {
         this.projectileSequence = new AtomicLong();
 
         this.lock = new ReentrantLock();
-        List<Vector2d> wallPositions = this.wallService.generateMaze();
+        List<Vector2d> wallPositions = this.wallService.generateGround();
         this.state = State.builder()
             .playersAckSN(new HashMap<>())
             .players(new HashMap<>())
@@ -86,13 +87,9 @@ public class GameStateServiceImpl implements GameStateService {
 
     @Override
     public void registerPlayer(String sessionId, String id) {
-
-        Player player = Player.builder()
-            .id(id)
-            .gameObject(gameObjectService.newPlayer(Vector2d.of(100, 100), 0))
-            .sessionId(sessionId)
-            .username(usernameService.generateUsername())
-            .build();
+        Player player = gameObjectService.newPlayer(Vector2d.of(10, 10), 0);
+        player.setSessionId(id);
+        player.setUsername(id);
 
         this.lock.lock();
         try {
@@ -139,11 +136,17 @@ public class GameStateServiceImpl implements GameStateService {
         try {
             Instant now = Instant.now();
 
+            Map<Long, GameObject> gameObjects = new HashMap<>();
+
             Map<String, Player> players = this.state.getPlayers();
-            final List<Body> walls = this.state.getWalls();
+            players.forEach((k, v) -> gameObjects.put(v.getId(), v));
+
+            final List<GameObject> walls = this.state.getWalls();
             Set<Bullet> projectiles = this.state.getProjectiles();
-            List<Vector2d> explosions = new ArrayList<>();
+            List<GameObject> explosions = new ArrayList<>();
             List<String> removedGameObjectIds = new ArrayList<>();
+
+
 
             Map<String, Long> ackSN = this.state.getPlayersAckSN();
 
@@ -164,30 +167,37 @@ public class GameStateServiceImpl implements GameStateService {
                         Vector2d force = getForceDirection(req).scale(magnitude);
 
                         Player player = players.get(sessionId);
-                        player.getGameObject().setForce(player.getGameObject().getForce().plus(force));
+                        player.setForce(player.getForce().plus(force));
 
-                        /*if (req.getLeftBtnClicked()) {
+                        if (req.getLeftBtnClicked()) {
 
+                            Vector2d bulletDir = GeometryUtil.rotate(Vector2d.UNIT_VECTOR_D0.reversed(),
+                                req.getRotationAngleRadian(),
+                                Vector2d.ZERO_VECTOR);
+                            GameObject gameObject = gameObjectService.newBullet(player.getPos(), req.getRotationAngleRadian());
+                            gameObject.setVelocity(bulletDir.scale(75));
                             projectiles.add(Bullet.builder()
                                 .id(projectileSequence.incrementAndGet())
                                 .playerId(player.getId())
                                 .createdAt(now)
-                                .gameObject(gameObjectService.newGameObject(center, angleRadian,
-                                    shapeService.bulletShape()))
+                                .gameObject(gameObject)
                                 .build());
-                        }*/
+                        }
                     }
                 }
             }
 
-            // integrate
-            List<Body> bodies = players.values().stream()
-                .map(Player::getGameObject)
-                .collect(Collectors.toList());
+
+            List<GameObject> bodies = new ArrayList<>();
+            bodies.addAll(players.values());
             bodies.addAll(walls);
-            for (Body body : bodies) {
+            bodies.addAll(projectiles.stream().map(Bullet::getGameObject).collect(Collectors.toList()));
+
+
+            // integrate
+            for (GameObject body : bodies) {
                 if (body.getMass() != 0) {
-                    // body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(0.02f * tickDelay)));
+                    body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(0.2f)));
                 }
                 body.setVelocity(body.getVelocity().plus(body.getForce().scale(body.getInvMass() * tickDelay)));
                 body.setPos(body.getPos().plus(body.getVelocity()));
@@ -196,57 +206,20 @@ public class GameStateServiceImpl implements GameStateService {
 
             // resolve collision
             Set<Manifold> manifolds = collisionService.findCollision(bodies);
+
+            for (Manifold manifold : manifolds) {
+
+                GameObject a = manifold.getA();
+                GameObject b = manifold.getB();
+
+                if(a instanceof Player) {
+
+                    Vector2d pos = AABB2d.of(a.getPos(), b.getPos()).getCenter();
+                    explosions.add(gameObjectService.newExplosion(pos, 0));
+                }
+            }
             collisionResolver.resolve(manifolds);
 
-            /*projectiles = projectiles.stream()
-                .map(bullet -> {
-
-                    float angleRadian = bullet.getGameObject().getTransform().getRotationAngleRadian();
-                    Vector2d oldCenter = bullet.getGameObject().getTransform().getPosition();
-
-                    Vector2d direction = Vector2d.UNIT_VECTOR_D0.reversed();
-                    direction = GeometryUtil.rotate(direction, angleRadian, Vector2d.ZERO_VECTOR);
-
-                    Vector2d delta = direction.scale(BULLET_SPEED * tickDelay);
-                    Vector2d center = oldCenter.plus(delta);
-
-                    if (bullet.getCreatedAt().plus(BULLET_LIFETIME).isBefore(now)) {
-                        return null;
-                    }
-
-                    GameObject go = gameObjectService.transform(bullet.getGameObject(), center, angleRadian);
-
-                    for (Player player : players.values()) {
-                        Polygon2d playerBox = player.getGameObject().getRigidBody().getTransformed();
-                        CollisionResult collision = collisionService.detectCollision(
-                            go.getRigidBody().getTransformed(),
-                            playerBox);
-
-                        if (collision.isCollide()) {
-                            explosions.add(center);
-                            return null;
-                        }
-                    }
-                    for (GameObject wall : walls) {
-                        Polygon2d otherTransformed = wall.getRigidBody().getTransformed();
-                        CollisionResult collision = collisionService.detectCollision(
-                            go.getRigidBody().getTransformed(),
-                            otherTransformed);
-
-                        if (collision.isCollide()) {
-                            return null;
-                        }
-                    }
-
-                    return Bullet.builder()
-                        .playerId(bullet.getPlayerId())
-                        .id(bullet.getId())
-                        .createdAt(bullet.getCreatedAt())
-                        .gameObject(go)
-                        .build();
-                })
-                .filter(Objects::nonNull)
-                .collect(toSet());*/
 
             Map<String, Long> ack = new HashMap<>();
             ackSN.forEach((sessionId, n) -> {

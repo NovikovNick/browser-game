@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class CollisionPair {
-    private final Body incident, reference;
+    private final GameObject incident, reference;
 }
 

@@ -1,9 +1,8 @@
 package com.metalheart.model;
 
-import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.Player;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import java.util.List;
 import java.util.Set;
 import lombok.Builder;
@@ -17,7 +16,7 @@ public class PlayerSnapshot {
     private Player character;
     private List<Player> enemies;
     private Set<Bullet> projectiles;
-    private List<Vector2d> explosions;
-    private List<Body> walls;
+    private List<GameObject> explosions;
+    private List<GameObject> walls;
     private List<String> removed;
 }

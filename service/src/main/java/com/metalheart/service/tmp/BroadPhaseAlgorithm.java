@@ -5,5 +5,5 @@ import java.util.Set;
 
 public interface BroadPhaseAlgorithm {
 
-    Set<CollisionPair> findPairs(Collection<Body> bodies);
+    Set<CollisionPair> findPairs(Collection<GameObject> bodies);
 }

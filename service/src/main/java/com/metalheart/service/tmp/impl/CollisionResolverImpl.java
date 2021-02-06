@@ -1,7 +1,7 @@
 package com.metalheart.service.tmp.impl;
 
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import com.metalheart.service.tmp.CollisionResolver;
 import com.metalheart.service.tmp.Manifold;
 import java.util.Set;
@@ -22,8 +22,8 @@ public class CollisionResolverImpl implements CollisionResolver {
 
     public void resolve(Manifold manifold) {
 
-        Body a = manifold.getA();
-        Body b = manifold.getB();
+        GameObject a = manifold.getA();
+        GameObject b = manifold.getB();
         Vector2d normal = manifold.getNormal();
         float depth = manifold.getPenetration();
 
@@ -69,7 +69,9 @@ public class CollisionResolverImpl implements CollisionResolver {
         if(Math.abs( jt ) < j * mu) {
             frictionImpulse = tangent.scale(jt);
         } else {
-            float dynamicFriction  = (float) sqrt(pow(a.getMaterial().getDynamicFriction(), 2) + pow(b.getMaterial().getDynamicFriction(), 2));
+            float aDynamicFriction = a.getMaterial().getDynamicFriction();
+            float bDynamicFriction = b.getMaterial().getDynamicFriction();
+            float dynamicFriction  = (float) sqrt(pow(aDynamicFriction, 2) + pow(bDynamicFriction, 2));
             frictionImpulse = tangent.scale(-j * dynamicFriction);
         }
 

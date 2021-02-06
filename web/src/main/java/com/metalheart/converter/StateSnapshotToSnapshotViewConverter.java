@@ -2,12 +2,11 @@ package com.metalheart.converter;
 
 import com.metalheart.model.StateSnapshot;
 import com.metalheart.model.game.Bullet;
-import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.model.response.GameObjectView;
 import com.metalheart.model.response.PlayerView;
 import com.metalheart.model.response.SnapshotView;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.core.convert.converter.Converter;
@@ -26,14 +25,18 @@ public class StateSnapshotToSnapshotViewConverter implements Converter<StateSnap
                 .collect(Collectors.toList());
 
         List<GameObjectView> walls = source.getSnapshot().getWalls().stream()
-            .map(this::convert)
+            .map(this::convertGameObject)
+            .collect(Collectors.toList());
+
+        List<GameObjectView> explosions = source.getSnapshot().getExplosions().stream()
+            .map(this::convertGameObject)
             .collect(Collectors.toList());
 
 
         List<GameObjectView> projectiles = source.getSnapshot().getProjectiles()
             .stream()
             .map(Bullet::getGameObject)
-            .map(this::convert)
+            .map(this::convertGameObject)
             .collect(Collectors.toList());
 
         return SnapshotView.builder()
@@ -42,6 +45,7 @@ public class StateSnapshotToSnapshotViewConverter implements Converter<StateSnap
             .enemies(enemies)
             .walls(walls)
             .projectiles(projectiles)
+            .explosions(explosions)
             .removed(source.getSnapshot().getRemoved())
             .build();
     }
@@ -49,22 +53,11 @@ public class StateSnapshotToSnapshotViewConverter implements Converter<StateSnap
     private PlayerView convert(Player source) {
         return PlayerView.builder()
             .username(source.getUsername())
-            .obj(this.convert(source.getGameObject()))
+            .obj(this.convertGameObject(source))
             .build();
     }
 
-    private GameObjectView convert(GameObject source) {
-        return GameObjectView.builder()
-            .id(source.getId())
-            .pos(new float[]{
-                source.getTransform().getPosition().getD0(),
-                source.getTransform().getPosition().getD1()
-            })
-            .rot(source.getTransform().getRotationAngleRadian())
-            .build();
-    }
-
-    private GameObjectView convert(Body source) {
+    private GameObjectView convertGameObject(GameObject source) {
         return GameObjectView.builder()
             .id(source.getId() + "")
             .pos(new float[]{

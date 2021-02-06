@@ -16,6 +16,24 @@ public class MazeService implements WallService {
     }
 
     @Override
+    public List<Vector2d> generateGround() {
+        List<Vector2d> list = new ArrayList<>();
+
+        int size = 100;
+        Vector2d offset = Vector2d.of(-2000, 300);
+
+        int width = 40;
+        int height = 3;
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                list.add(Vector2d.of(x, y).scale(size).plus(offset));
+            }
+        }
+        return list;
+    }
+
+    @Override
     public List<Vector2d> generateWalls() {
         List<Vector2d> list = new ArrayList<>();
         for (int i = 0; i < 6; i++) {

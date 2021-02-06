@@ -7,7 +7,7 @@ import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Material;
 import com.metalheart.service.GeometryUtil;
 import com.metalheart.service.state.ShapeService;
-import com.metalheart.service.tmp.Body;
+import com.metalheart.service.tmp.GameObject;
 import com.metalheart.service.tmp.CollisionDetector;
 import com.metalheart.service.tmp.CollisionResolver;
 import com.metalheart.service.tmp.Manifold;
@@ -26,8 +26,8 @@ import static java.util.Arrays.asList;
 @Component
 public class Showcase extends AnimationTimer {
 
-    public static final int SPEED = 100;
-    public static final float GRAVITY  = 30;
+    public static final int SPEED = 400;
+    public static final float GRAVITY  = 100;
     public static final int VECTOR_UNIT = 25;
     public static final Polygon2d WALL_RIGHT = new Polygon2d(
         Vector2d.of(1902.0f, 753.0f),
@@ -70,8 +70,8 @@ public class Showcase extends AnimationTimer {
 
     private Long previousAnimationAt;
 
-    private Body incBody;
-    private List<Body> bodies;
+    private GameObject incBody;
+    private List<GameObject> bodies;
 
     private final AtomicLong bodiesSq;
 
@@ -89,7 +89,7 @@ public class Showcase extends AnimationTimer {
 
         bodiesSq = new AtomicLong(0);
 
-        incBody = new Body(
+        incBody = new GameObject(
             bodiesSq.incrementAndGet(),
             shapeService.playerShape(),
             Material.WOOD,
@@ -100,7 +100,7 @@ public class Showcase extends AnimationTimer {
             incBody
             // , new Body(bodiesSq.incrementAndGet(), WALL_RIGHT, Material.STATIC, Vector2d.ZERO_VECTOR)
             // , new Body(bodiesSq.incrementAndGet(), WALL_LEFT, Material.STATIC, Vector2d.ZERO_VECTOR)
-            , new Body(bodiesSq.incrementAndGet(), WALL_BOTTOM, Material.STATIC, Vector2d.ZERO_VECTOR)
+            , new GameObject(bodiesSq.incrementAndGet(), WALL_BOTTOM, Material.STATIC, Vector2d.ZERO_VECTOR)
             // , new Body(bodiesSq.incrementAndGet(), WALL_TOP, Material.STATIC, Vector2d.ZERO_VECTOR)
         ));
     }
@@ -120,7 +120,7 @@ public class Showcase extends AnimationTimer {
             Vector2d end = mousePos;
             float angleRadian = GeometryUtil.getAngleRadian(start, end);
             Vector2d dir = GeometryUtil.rotate(Vector2d.UNIT_VECTOR_D0, angleRadian, Vector2d.ZERO_VECTOR);
-            Body bullet = new Body(
+            GameObject bullet = new GameObject(
                 bodiesSq.incrementAndGet(),
                 shapeService.playerShape(),
                 Material.METAL,
@@ -130,7 +130,7 @@ public class Showcase extends AnimationTimer {
         }
 
         // integrate
-        for (Body body : bodies) {
+        for (GameObject body : bodies) {
             if (body.getMass() != 0) {
                 body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(GRAVITY)));
             }
@@ -143,12 +143,9 @@ public class Showcase extends AnimationTimer {
         Set<Manifold> manifolds = collisionDetector.findCollision(bodies);
         collisionResolver.resolve(manifolds);
 
-        canvasService.clear();
-
-
         // draw
         canvasService.clear();
-        for (Body body : bodies) {
+        for (GameObject body : bodies) {
             Vector2d velocity = body.getVelocity();
             Vector2d c = AABB2d.of(body.getShape().getPoints()).getCenter();
             canvasService.drawArrow(c, c.plus(velocity.scale(VECTOR_UNIT)), Color.RED);
@@ -158,25 +155,22 @@ public class Showcase extends AnimationTimer {
         for (Manifold m : manifolds) {
 
             Vector2d normal = m.getNormal();
-            Body a = m.getA();
-            Body b = m.getB();
+            GameObject a = m.getA();
+            GameObject b = m.getB();
 
             Vector2d rv = b.getVelocity().minus(a.getVelocity());
 
             Vector2d c = AABB2d.of(a.getShape().getPoints()).getCenter();
             canvasService.drawArrow(c, c.plus(normal.scale(VECTOR_UNIT)), Color.GREEN);
-            //canvasService.drawArrow(c, c.plus(rv.scale(VECTOR_UNIT)), Color.BLUE);
+            // canvasService.drawArrow(c, c.plus(rv.scale(VECTOR_UNIT)), Color.BLUE);
             // canvasService.drawArrow(c, c.plus(tangent.scale(jt * VECTOR_UNIT)), Color.AQUA);
         }
-
 
         {
 
             Vector2d center = canvasService.getCenter();
             float angleRadian = GeometryUtil.getAngleRadian(center, mousePos);
             Vector2d dir = GeometryUtil.rotate(Vector2d.UNIT_VECTOR_D0, angleRadian, Vector2d.ZERO_VECTOR).normalize();
-
-
 
             Vector2d normal = Vector2d.UNIT_VECTOR_D1;
             Vector2d aV = dir.scale(100);
@@ -186,13 +180,11 @@ public class Showcase extends AnimationTimer {
 
             float velAlongNormal = rv.dotProduct(normal);
 
-
             // Вычисляем скаляр импульса силы
             float j = -velAlongNormal / (0.8f);
 
             // Прикладываем импульс силы
             Vector2d impulse = velAlongNormal > 0 ? Vector2d.ZERO_VECTOR : normal.scale(j);
-
 
             canvasService.drawArrow("aV", center, center.plus(aV), Color.YELLOW);
             canvasService.drawArrow("bV", center, center.plus(bV), Color.YELLOW);
