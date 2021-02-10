@@ -2,7 +2,7 @@ package com.metalheart.model;
 
 import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.Player;
-import com.metalheart.service.tmp.GameObject;
+import com.metalheart.model.game.GameObject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

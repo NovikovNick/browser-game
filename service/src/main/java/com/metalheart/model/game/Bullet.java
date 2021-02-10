@@ -1,18 +1,29 @@
 package com.metalheart.model.game;
 
-import com.metalheart.service.tmp.GameObject;
+import com.metalheart.model.common.Material;
+import com.metalheart.model.common.Polygon2d;
+import com.metalheart.model.common.Vector2d;
 import java.time.Instant;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@Builder
-@EqualsAndHashCode(of = {"playerId", "id"})
-public class Bullet {
+@Getter
+@Setter
+public class Bullet extends GameObject {
 
-    private Long id;
     private Long playerId;
     private Instant createdAt;
-    private GameObject gameObject;
+
+    public Bullet(long id, Polygon2d shape, Material material, Vector2d pos) {
+        super(id, shape, material, pos);
+    }
+
+
+    @Override
+    public Bullet clone() {
+        var cloned = new Bullet(getId(), getShape(), getMaterial(), getPos());
+        cloned.setPlayerId(playerId);
+        cloned.setCreatedAt(createdAt);
+        return cloned;
+    }
 }

@@ -5,18 +5,17 @@ import com.metalheart.model.State;
 import com.metalheart.model.common.AABB2d;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
+import com.metalheart.model.game.GameObject;
+import com.metalheart.model.common.Manifold;
 import com.metalheart.model.game.Player;
 import com.metalheart.service.GeometryUtil;
 import com.metalheart.service.input.PlayerInputService;
 import com.metalheart.service.state.GameObjectService;
 import com.metalheart.service.state.GameStateService;
-import com.metalheart.service.state.ShapeService;
 import com.metalheart.service.state.UsernameService;
 import com.metalheart.service.state.WallService;
-import com.metalheart.service.tmp.GameObject;
-import com.metalheart.service.tmp.CollisionDetector;
-import com.metalheart.service.tmp.CollisionResolver;
-import com.metalheart.service.tmp.Manifold;
+import com.metalheart.service.physic.CollisionDetector;
+import com.metalheart.service.physic.CollisionResolver;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -44,19 +42,16 @@ public class GameStateServiceImpl implements GameStateService {
     private final UsernameService usernameService;
     private final CollisionDetector collisionService;
     private final CollisionResolver collisionResolver;
-    private final ShapeService shapeService;
     private final GameObjectService gameObjectService;
     private final PlayerInputService playerInputService;
     private final WallService wallService;
 
-    private final AtomicLong projectileSequence;
     private State state;
     private Lock lock;
 
     public GameStateServiceImpl(UsernameService usernameService,
                                 CollisionDetector collisionService,
                                 CollisionResolver collisionResolver,
-                                ShapeService shapeService,
                                 GameObjectService gameObjectService,
                                 PlayerInputService playerInputService,
                                 WallService wallService) {
@@ -64,12 +59,9 @@ public class GameStateServiceImpl implements GameStateService {
         this.usernameService = usernameService;
         this.collisionService = collisionService;
         this.collisionResolver = collisionResolver;
-        this.shapeService = shapeService;
         this.gameObjectService = gameObjectService;
         this.playerInputService = playerInputService;
         this.wallService = wallService;
-
-        this.projectileSequence = new AtomicLong();
 
         this.lock = new ReentrantLock();
         List<Vector2d> wallPositions = this.wallService.generateGround();
@@ -174,25 +166,20 @@ public class GameStateServiceImpl implements GameStateService {
                             Vector2d bulletDir = GeometryUtil.rotate(Vector2d.UNIT_VECTOR_D0.reversed(),
                                 req.getRotationAngleRadian(),
                                 Vector2d.ZERO_VECTOR);
-                            GameObject gameObject = gameObjectService.newBullet(player.getPos(), req.getRotationAngleRadian());
-                            gameObject.setVelocity(bulletDir.scale(75));
-                            projectiles.add(Bullet.builder()
-                                .id(projectileSequence.incrementAndGet())
-                                .playerId(player.getId())
-                                .createdAt(now)
-                                .gameObject(gameObject)
-                                .build());
+                            Bullet bullet = gameObjectService.newBullet(player.getPos(), req.getRotationAngleRadian());
+                            bullet.setPlayerId(player.getId());
+                            bullet.setCreatedAt(now);
+                            bullet.setVelocity(bulletDir.scale(75));
+                            projectiles.add(bullet);
                         }
                     }
                 }
             }
 
-
             List<GameObject> bodies = new ArrayList<>();
             bodies.addAll(players.values());
             bodies.addAll(walls);
-            bodies.addAll(projectiles.stream().map(Bullet::getGameObject).collect(Collectors.toList()));
-
+            bodies.addAll(projectiles);
 
             // integrate
             for (GameObject body : bodies) {
@@ -215,7 +202,7 @@ public class GameStateServiceImpl implements GameStateService {
                 if(a instanceof Player) {
 
                     Vector2d pos = AABB2d.of(a.getPos(), b.getPos()).getCenter();
-                    explosions.add(gameObjectService.newExplosion(pos, 0));
+                    // explosions.add(gameObjectService.newExplosion(pos, 0));
                 }
             }
             collisionResolver.resolve(manifolds);

@@ -1,8 +1,8 @@
 package com.metalheart.model.game;
 
+import com.metalheart.model.common.Material;
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.service.tmp.GameObject;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,7 +19,7 @@ public class Player extends GameObject {
 
     @Override
     public Player clone() {
-        Player cloned = new Player(getId(), getShape(), getMaterial(), getPos());
+        var cloned = new Player(getId(), getShape(), getMaterial(), getPos());
         cloned.setSessionId(sessionId);
         cloned.setUsername(username);
         return cloned;

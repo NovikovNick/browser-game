@@ -1,4 +1,4 @@
-package com.metalheart.model.game;
+package com.metalheart.model.common;
 
 
 public enum Material {

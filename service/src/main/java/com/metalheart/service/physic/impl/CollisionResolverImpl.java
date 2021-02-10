@@ -1,9 +1,9 @@
-package com.metalheart.service.tmp.impl;
+package com.metalheart.service.physic.impl;
 
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.service.tmp.GameObject;
-import com.metalheart.service.tmp.CollisionResolver;
-import com.metalheart.service.tmp.Manifold;
+import com.metalheart.model.game.GameObject;
+import com.metalheart.service.physic.CollisionResolver;
+import com.metalheart.model.common.Manifold;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 

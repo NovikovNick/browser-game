@@ -2,7 +2,7 @@ package com.metalheart.service.output.impl;
 
 import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.service.output.PlayerSnapshotDeltaService;
-import com.metalheart.service.tmp.GameObject;
+import com.metalheart.model.game.GameObject;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

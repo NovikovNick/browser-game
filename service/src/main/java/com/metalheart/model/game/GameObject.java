@@ -1,9 +1,9 @@
-package com.metalheart.service.tmp;
+package com.metalheart.model.game;
 
 import com.metalheart.model.common.AABB2d;
+import com.metalheart.model.common.Material;
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.model.game.Material;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

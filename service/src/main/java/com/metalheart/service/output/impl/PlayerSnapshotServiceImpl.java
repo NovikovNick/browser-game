@@ -6,7 +6,7 @@ import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.Player;
 import com.metalheart.service.output.PlayerSnapshotService;
-import com.metalheart.service.tmp.GameObject;
+import com.metalheart.model.game.GameObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +46,7 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
 
                 List<Player> enemies = players.values().stream()
                     .filter(enemy -> !player.equals(enemy))
-                    .map(enemy -> enemy.clone())
+                    .map(Player::clone)
                     .collect(Collectors.toList());
 
 
@@ -68,11 +68,9 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
                 PlayerSnapshot snapshot = PlayerSnapshot.builder()
                     .character(cloned)
                     .enemies(enemies)
-                    .projectiles(projectiles.stream().map(p -> Bullet.builder()
-                        .id(p.getId())
-                        .playerId(p.getPlayerId())
-                        .gameObject(p.getGameObject())
-                        .build()).collect(Collectors.toSet()))
+                    .projectiles(projectiles.stream()
+                        .map(Bullet::clone)
+                        .collect(Collectors.toSet()))
                     .explosions(explosions)
                     .walls(playerWalls)
                     .removed(removedWalls)

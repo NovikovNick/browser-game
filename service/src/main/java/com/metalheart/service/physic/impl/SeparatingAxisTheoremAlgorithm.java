@@ -1,12 +1,12 @@
-package com.metalheart.service.tmp.impl;
+package com.metalheart.service.physic.impl;
 
 import com.metalheart.model.common.CollisionResult;
 import com.metalheart.model.common.Line;
 import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.service.GeometryUtil;
-import com.metalheart.service.tmp.CollisionPair;
-import com.metalheart.service.tmp.NarrowPhaseAlgorithm;
+import com.metalheart.model.common.CollisionPair;
+import com.metalheart.service.physic.NarrowPhaseAlgorithm;
 import java.util.List;
 import org.springframework.stereotype.Service;
 

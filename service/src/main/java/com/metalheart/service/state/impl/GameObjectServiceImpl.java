@@ -1,11 +1,12 @@
 package com.metalheart.service.state.impl;
 
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.model.game.Material;
+import com.metalheart.model.game.Bullet;
+import com.metalheart.model.common.Material;
 import com.metalheart.model.game.Player;
 import com.metalheart.service.state.GameObjectService;
 import com.metalheart.service.state.ShapeService;
-import com.metalheart.service.tmp.GameObject;
+import com.metalheart.model.game.GameObject;
 import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Service;
 
@@ -27,9 +28,9 @@ public class GameObjectServiceImpl implements GameObjectService {
     }
 
     @Override
-    public GameObject newBullet(Vector2d position, float rotationAngleRadian) {
+    public Bullet newBullet(Vector2d position, float rotationAngleRadian) {
         long id = gameObjectSequence.incrementAndGet();
-        return new GameObject(id, shapeService.bulletShape(), Material.METAL, position);
+        return new Bullet(id, shapeService.bulletShape(), Material.METAL, position);
     }
 
     @Override

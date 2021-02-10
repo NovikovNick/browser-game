@@ -1,12 +1,11 @@
 package com.metalheart.converter;
 
 import com.metalheart.model.StateSnapshot;
-import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.Player;
 import com.metalheart.model.response.GameObjectView;
 import com.metalheart.model.response.PlayerView;
 import com.metalheart.model.response.SnapshotView;
-import com.metalheart.service.tmp.GameObject;
+import com.metalheart.model.game.GameObject;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.core.convert.converter.Converter;
@@ -35,7 +34,6 @@ public class StateSnapshotToSnapshotViewConverter implements Converter<StateSnap
 
         List<GameObjectView> projectiles = source.getSnapshot().getProjectiles()
             .stream()
-            .map(Bullet::getGameObject)
             .map(this::convertGameObject)
             .collect(Collectors.toList());
 

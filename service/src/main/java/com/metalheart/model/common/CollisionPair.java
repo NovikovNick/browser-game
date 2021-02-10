@@ -1,5 +1,6 @@
-package com.metalheart.service.tmp;
+package com.metalheart.model.common;
 
+import com.metalheart.model.game.GameObject;
 import lombok.Data;
 
 @Data

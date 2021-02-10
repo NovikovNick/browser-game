@@ -56,116 +56,34 @@ let timerId = setTimeout(function tick() {
     const snapshots = state.snapshots;
     const walls = state.walls;
 
+    let character = state.character;
+
     if (snapshots) {
         const fst = snapshots[0]
         const snd = snapshots[1]
 
-        if (fst && snd && fst.character && snd.character) {
+        
 
+        console.log(fst)
+        let enemies = [];
+        let projectiles = [];
+        let explosions = [];
+        const updatedWalls = [];
+
+        if(fst && snd) {
             const frame = fst.timestamp - snd.timestamp;
             const now = new Date().getTime();
             const delay = now - fst.timestamp;
             const mod = frame < delay ? 1 : delay / frame;
-
-            // player
-            const character = interpolatePlayer(fst.character, snd.character, mod);
             const offset = [
-                character.gameObject.pos[0] - center[0],
-                character.gameObject.pos[1] - center[1]
+                0,
+                0
             ];
-            if (character) {
-                character.gameObject.pos = center;
-                character.gameObject.shape = ShapeService.getPlayerShape().map(p => {
-                    return GeometryService.rotate(
-                        [p[0] + center[0], p[1] + center[1]],
-                        character.gameObject.rot,
-                        center
-                    );
-                });
-            }
+            let str = "Snapshots: ";
+            for (let i = 0; i < snapshots.length; i++)  {
 
-            // enemies
-            const enemies = [];
-            {
-                const fstGroupedById = fst.enemies.reduce((r, a) => {
-                    r[a.obj.id] = a;
-                    return r;
-                }, {});
-
-                const sndGroupedById = snd.enemies.reduce((r, a) => {
-                    r[a.obj.id] = a;
-                    return r;
-                }, {});
-
-                for (const [id, value] of Object.entries(fstGroupedById)) {
-                    if (sndGroupedById[id]) {
-                        const p1 = value
-                        const p2 = sndGroupedById[id]
-                        const item = interpolatePlayer(p1, p2, mod);
-
-                        const pos = [item.gameObject.pos[0] - offset[0], item.gameObject.pos[1] - offset[1]];
-                        item.gameObject.pos = pos;
-                        item.gameObject.shape = ShapeService.getPlayerShape().map(p => {
-                            return GeometryService.rotate(
-                                [p[0] + pos[0], p[1] + pos[1]],
-                                item.gameObject.rot,
-                                pos
-                            );
-                        });
-
-                        enemies.push(item);
-                    }
-                }
-            }
-
-            // projectiles
-            const projectiles = [];
-            {
-                const fstGroupedById = fst.projectiles.reduce((r, a) => {
-                    r[a.id] = a;
-                    return r;
-                }, {});
-                const sndGroupedById = snd.projectiles.reduce((r, a) => {
-                    r[a.id] = a;
-                    return r;
-                }, {});
-
-                for (const [id, value] of Object.entries(fstGroupedById)) {
-                    if (sndGroupedById[id]) {
-                        const p1 = value
-                        const p2 = sndGroupedById[id]
-
-                        const item = interpolateGameObject(p2, p1, mod);
-
-                        const pos = [item.pos[0] - offset[0], item.pos[1] - offset[1]];
-                        item.pos = pos;
-                        item.shape = ShapeService.getBulletShape().map(p => {
-                            return GeometryService.rotate(
-                                [p[0] + pos[0], p[1] + pos[1]],
-                                item.rot,
-                                pos
-                            );
-                        });
-
-                        projectiles.push(item);
-                    }
-                }
-            }
-
-            // explosions
-            const explosions = [];
-            {
-                Array.isArray(fst.explosions) && fst.explosions.map(item => {
-
-                    const pos = [item.pos[0] - offset[0], item.pos[1] - offset[1]];
-                    explosions.push({timestamp: now, point: pos})
-                })
-            }
-
-            // walls
-            const updatedWalls = [];
-            {
                 const wallObjIds = new Set();
+
                 walls.forEach(w => wallObjIds.add(w.id));
                 fst.walls.length > 0 && fst.walls.forEach(w => wallObjIds.add(w.id))
                 snd.walls.length > 0 && snd.walls.forEach(w => wallObjIds.add(w.id))
@@ -200,9 +118,109 @@ let timerId = setTimeout(function tick() {
                     }
                 })
             }
-
-            store.dispatch(actions.updateState(character, enemies, projectiles, explosions, updatedWalls));
         }
+
+        if (fst && snd && fst.character && snd.character) {
+
+            const frame = fst.timestamp - snd.timestamp;
+            const now = new Date().getTime();
+            const delay = now - fst.timestamp;
+            const mod = frame < delay ? 1 : delay / frame;
+
+            // player
+            character = interpolatePlayer(fst.character, snd.character, mod);
+            const offset = [
+                character.gameObject.pos[0] - center[0],
+                character.gameObject.pos[1] - center[1]
+            ];
+            if (character) {
+                character.gameObject.pos = center;
+                character.gameObject.shape = ShapeService.getPlayerShape().map(p => {
+                    return GeometryService.rotate(
+                        [p[0] + center[0], p[1] + center[1]],
+                        character.gameObject.rot,
+                        center
+                    );
+                });
+            }
+
+            // enemies
+            {
+                const fstGroupedById = fst.enemies.reduce((r, a) => {
+                    r[a.obj.id] = a;
+                    return r;
+                }, {});
+
+                const sndGroupedById = snd.enemies.reduce((r, a) => {
+                    r[a.obj.id] = a;
+                    return r;
+                }, {});
+
+                for (const [id, value] of Object.entries(fstGroupedById)) {
+                    if (sndGroupedById[id]) {
+                        const p1 = value
+                        const p2 = sndGroupedById[id]
+                        const item = interpolatePlayer(p1, p2, mod);
+
+                        const pos = [item.gameObject.pos[0] - offset[0], item.gameObject.pos[1] - offset[1]];
+                        item.gameObject.pos = pos;
+                        item.gameObject.shape = ShapeService.getPlayerShape().map(p => {
+                            return GeometryService.rotate(
+                                [p[0] + pos[0], p[1] + pos[1]],
+                                item.gameObject.rot,
+                                pos
+                            );
+                        });
+
+                        enemies.push(item);
+                    }
+                }
+            }
+
+            // projectiles
+            {
+                const fstGroupedById = fst.projectiles.reduce((r, a) => {
+                    r[a.id] = a;
+                    return r;
+                }, {});
+                const sndGroupedById = snd.projectiles.reduce((r, a) => {
+                    r[a.id] = a;
+                    return r;
+                }, {});
+
+                for (const [id, value] of Object.entries(fstGroupedById)) {
+                    if (sndGroupedById[id]) {
+                        const p1 = value
+                        const p2 = sndGroupedById[id]
+
+                        const item = interpolateGameObject(p2, p1, mod);
+
+                        const pos = [item.pos[0] - offset[0], item.pos[1] - offset[1]];
+                        item.pos = pos;
+                        item.shape = ShapeService.getBulletShape().map(p => {
+                            return GeometryService.rotate(
+                                [p[0] + pos[0], p[1] + pos[1]],
+                                item.rot,
+                                pos
+                            );
+                        });
+
+                        projectiles.push(item);
+                    }
+                }
+            }
+
+            // explosions
+            {
+                Array.isArray(fst.explosions) && fst.explosions.map(item => {
+
+                    const pos = [item.pos[0] - offset[0], item.pos[1] - offset[1]];
+                    explosions.push({timestamp: now, point: pos})
+                })
+            }
+
+        }
+        store.dispatch(actions.updateState(character, enemies, projectiles, explosions, updatedWalls));
     }
 
     timerId = setTimeout(tick, 15);

@@ -1,12 +1,12 @@
-package com.metalheart.service.tmp.impl;
+package com.metalheart.service.physic.impl;
 
 import com.metalheart.model.common.CollisionResult;
-import com.metalheart.service.tmp.GameObject;
-import com.metalheart.service.tmp.BroadPhaseAlgorithm;
-import com.metalheart.service.tmp.CollisionDetector;
-import com.metalheart.service.tmp.CollisionPair;
-import com.metalheart.service.tmp.Manifold;
-import com.metalheart.service.tmp.NarrowPhaseAlgorithm;
+import com.metalheart.model.game.GameObject;
+import com.metalheart.service.physic.BroadPhaseAlgorithm;
+import com.metalheart.service.physic.CollisionDetector;
+import com.metalheart.model.common.CollisionPair;
+import com.metalheart.model.common.Manifold;
+import com.metalheart.service.physic.NarrowPhaseAlgorithm;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
