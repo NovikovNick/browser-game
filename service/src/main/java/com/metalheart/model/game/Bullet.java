@@ -18,12 +18,16 @@ public class Bullet extends GameObject {
         super(id, shape, material, pos);
     }
 
-
     @Override
     public Bullet clone() {
         var cloned = new Bullet(getId(), getShape(), getMaterial(), getPos());
         cloned.setPlayerId(playerId);
         cloned.setCreatedAt(createdAt);
         return cloned;
+    }
+
+    @Override
+    public GameObjectType getType() {
+        return GameObjectType.BULLET;
     }
 }

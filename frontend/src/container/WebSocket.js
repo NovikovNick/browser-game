@@ -8,7 +8,7 @@ import {bindActionCreators} from 'redux';
 import * as Store from "../store/ReduxActions";
 
 const inputState = {
-    ackSN: null,
+    ackSN: [],
     leftBtnClicked: false,
     rightBtnClicked: false,
     rotationAngleRadian: 0,
@@ -95,7 +95,7 @@ function WebSocket({host, actions}) {
 
                 webSocket.subscribe(ENDPOINT.TOPIC_PLAYER_LIST + sessionId, message => {
                     const serverSnapshot = JSON.parse(message.body);
-                    inputState.ackSN = serverSnapshot.sn;
+                    inputState.ackSN = [serverSnapshot.sn].concat(inputState.ackSN.slice(0, 10))
                     actions.addSnapshot(serverSnapshot);
                 });
 

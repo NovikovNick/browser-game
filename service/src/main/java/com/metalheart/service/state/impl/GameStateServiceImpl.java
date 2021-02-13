@@ -3,34 +3,34 @@ package com.metalheart.service.state.impl;
 import com.metalheart.model.PlayerInput;
 import com.metalheart.model.State;
 import com.metalheart.model.common.AABB2d;
+import com.metalheart.model.common.Manifold;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.GameObject;
-import com.metalheart.model.common.Manifold;
 import com.metalheart.model.game.Player;
 import com.metalheart.service.GeometryUtil;
 import com.metalheart.service.input.PlayerInputService;
-import com.metalheart.service.state.GameObjectService;
-import com.metalheart.service.state.GameStateService;
-import com.metalheart.service.state.UsernameService;
-import com.metalheart.service.state.WallService;
 import com.metalheart.service.physic.CollisionDetector;
 import com.metalheart.service.physic.CollisionResolver;
+import com.metalheart.service.state.GameObjectService;
+import com.metalheart.service.state.GameStateService;
+import com.metalheart.service.state.PlayerPresentationService;
+import com.metalheart.service.state.UsernameService;
+import com.metalheart.service.state.WallService;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import static com.metalheart.model.game.GameObjectType.PLAYER;
 
 @Service
 public class GameStateServiceImpl implements GameStateService {
@@ -45,6 +45,7 @@ public class GameStateServiceImpl implements GameStateService {
     private final GameObjectService gameObjectService;
     private final PlayerInputService playerInputService;
     private final WallService wallService;
+    private final PlayerPresentationService playerPresentationService;
 
     private State state;
     private Lock lock;
@@ -54,7 +55,8 @@ public class GameStateServiceImpl implements GameStateService {
                                 CollisionResolver collisionResolver,
                                 GameObjectService gameObjectService,
                                 PlayerInputService playerInputService,
-                                WallService wallService) {
+                                WallService wallService,
+                                PlayerPresentationService playerPresentationService) {
 
         this.usernameService = usernameService;
         this.collisionService = collisionService;
@@ -62,30 +64,25 @@ public class GameStateServiceImpl implements GameStateService {
         this.gameObjectService = gameObjectService;
         this.playerInputService = playerInputService;
         this.wallService = wallService;
+        this.playerPresentationService = playerPresentationService;
 
         this.lock = new ReentrantLock();
-        List<Vector2d> wallPositions = this.wallService.generateGround();
-        this.state = State.builder()
-            .playersAckSN(new HashMap<>())
-            .players(new HashMap<>())
-            .projectiles(new TreeSet<>(Comparator.comparing(Bullet::getId)))
-            .explosions(Collections.emptyList())
-            .walls(wallPositions.stream()
-                .map(pos -> gameObjectService.newWall(pos, 0))
-                .collect(Collectors.toList()))
-            .removedGameObjectIds(Collections.emptyList())
-            .build();
+
+        this.state = new State();
+        this.wallService.generateGround().stream()
+            .map(pos -> gameObjectService.newWall(pos, 0))
+            .forEach(state::addGameObject);
     }
 
     @Override
     public void registerPlayer(String sessionId, String id) {
         Player player = gameObjectService.newPlayer(Vector2d.of(10, 10), 0);
-        player.setSessionId(id);
+        player.setSessionId(sessionId);
         player.setUsername(id);
 
         this.lock.lock();
         try {
-            this.state.getPlayers().put(sessionId, player);
+            this.state.addPlayer(sessionId, player);
         } finally {
             this.lock.unlock();
         }
@@ -98,8 +95,8 @@ public class GameStateServiceImpl implements GameStateService {
 
         this.lock.lock();
         try {
-            Player player = this.state.getPlayers().get(playerId);
-            player.setUsername(username);
+            // todo use 'id' to send events to player
+            // this.state.getPlayer(playerId).setUsername(username);
         } finally {
             this.lock.unlock();
         }
@@ -111,54 +108,53 @@ public class GameStateServiceImpl implements GameStateService {
     public void unregisterPlayer(String playerId) {
         this.lock.lock();
         try {
-            this.state.getPlayers().remove(playerId);
+            this.state.removePlayer(playerId);
         } finally {
             this.lock.unlock();
         }
     }
 
     @Override
-    public State calculateGameState(Integer tickDelay) {
+    public State step(Integer dt) {
 
         Map<String, List<PlayerInput>> inputs = playerInputService.pop();
-
-        State cloned = null;
+        State state = null;
 
         this.lock.lock();
         try {
             Instant now = Instant.now();
 
-            Map<Long, GameObject> gameObjects = new HashMap<>();
+            state = this.state.clone();
 
-            Map<String, Player> players = this.state.getPlayers();
-            players.forEach((k, v) -> gameObjects.put(v.getId(), v));
+            Collection<GameObject> bodies = state.getAll();
 
-            final List<GameObject> walls = this.state.getWalls();
-            Set<Bullet> projectiles = this.state.getProjectiles();
-            List<GameObject> explosions = new ArrayList<>();
-            List<String> removedGameObjectIds = new ArrayList<>();
+            // confirm previous sent snapshots
+            for (String sessionId : inputs.keySet()) {
 
+                List<PlayerInput> in = inputs.get(sessionId);
+                Set<Long> ack = in.stream()
+                    .map(PlayerInput::getAckSN)
+                    .filter(Objects::nonNull)
+                    .flatMap(id -> id.stream())
+                    .collect(Collectors.toSet());
 
-
-            Map<String, Long> ackSN = this.state.getPlayersAckSN();
+                playerPresentationService.confirmSnapshots(sessionId, ack);
+            }
 
             // apply forces
             for (String sessionId : inputs.keySet()) {
+
                 List<PlayerInput> in = inputs.get(sessionId);
                 int requestCount = in.size();
+
                 for (PlayerInput req : in) {
 
-                    ackSN.merge(sessionId, 0l,
-                        (old, v) -> old != null &&  req.getAckSN() != null && old > req.getAckSN()
-                            ? old
-                            : req.getAckSN());
+                    if (state.isPlayerRegistered(sessionId)) {
 
-                    if (players.containsKey(sessionId)) {
-
-                        float magnitude = PLAYER_SPEED * tickDelay / requestCount;
+                        float magnitude = PLAYER_SPEED * dt / requestCount;
                         Vector2d force = getForceDirection(req).scale(magnitude);
 
-                        Player player = players.get(sessionId);
+                        Player player = state.getPlayer(sessionId);
                         player.setForce(player.getForce().plus(force));
 
                         if (req.getLeftBtnClicked()) {
@@ -170,23 +166,21 @@ public class GameStateServiceImpl implements GameStateService {
                             bullet.setPlayerId(player.getId());
                             bullet.setCreatedAt(now);
                             bullet.setVelocity(bulletDir.scale(75));
-                            projectiles.add(bullet);
+
+                            state.addGameObject(bullet);
                         }
                     }
                 }
             }
-
-            List<GameObject> bodies = new ArrayList<>();
-            bodies.addAll(players.values());
-            bodies.addAll(walls);
-            bodies.addAll(projectiles);
-
-            // integrate
             for (GameObject body : bodies) {
                 if (body.getMass() != 0) {
                     body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(0.2f)));
                 }
-                body.setVelocity(body.getVelocity().plus(body.getForce().scale(body.getInvMass() * tickDelay)));
+            }
+
+            // integrate
+            for (GameObject body : bodies) {
+                body.setVelocity(body.getVelocity().plus(body.getForce().scale(body.getInvMass() * dt)));
                 body.setPos(body.getPos().plus(body.getVelocity()));
                 body.setForce(Vector2d.ZERO_VECTOR);
             }
@@ -199,7 +193,7 @@ public class GameStateServiceImpl implements GameStateService {
                 GameObject a = manifold.getA();
                 GameObject b = manifold.getB();
 
-                if(a instanceof Player) {
+                if(PLAYER.equals(a.getType())) {
 
                     Vector2d pos = AABB2d.of(a.getPos(), b.getPos()).getCenter();
                     // explosions.add(gameObjectService.newExplosion(pos, 0));
@@ -208,26 +202,12 @@ public class GameStateServiceImpl implements GameStateService {
             collisionResolver.resolve(manifolds);
 
 
-            Map<String, Long> ack = new HashMap<>();
-            ackSN.forEach((sessionId, n) -> {
-                if (players.keySet().contains(sessionId)) {
-                    ack.put(sessionId, n);
-                }
-            });
-            this.state = State.builder()
-                .playersAckSN(ack)
-                .players(players)
-                .projectiles(projectiles)
-                .explosions(explosions)
-                .walls(walls)
-                .removedGameObjectIds(removedGameObjectIds)
-                .build();
-            cloned = this.state.clone();
+            this.state = state.clone();
 
         } finally {
             this.lock.unlock();
         }
-        return cloned;
+        return state;
     }
 
     private Vector2d getForceDirection(PlayerInput req) {

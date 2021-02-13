@@ -39,9 +39,11 @@ public class SocketEventListener {
     private void handleGameStateEvent(ServerTicEvent event) {
 
         event.getSnapshots().forEach((sessionId, snapshot) -> {
-            String id = snapshot.getSnapshot().getCharacter().getSessionId();
-            SnapshotView view = conversionService.convert(snapshot, SnapshotView.class);
-            messagingTemplate.convertAndSendToUser(id, Constant.OUTPUT_PLAYER_STATE, view);
+            if(snapshot.getCharacter() != null) {
+                String id = snapshot.getCharacter().getUsername();
+                SnapshotView view = conversionService.convert(snapshot, SnapshotView.class);
+                messagingTemplate.convertAndSendToUser(id, Constant.OUTPUT_PLAYER_STATE, view);
+            }
         });
     }
 

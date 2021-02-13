@@ -1,12 +1,13 @@
 package com.metalheart.service.state.impl;
 
+import com.metalheart.model.common.Material;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
-import com.metalheart.model.common.Material;
+import com.metalheart.model.game.Explosion;
 import com.metalheart.model.game.Player;
+import com.metalheart.model.game.Wall;
 import com.metalheart.service.state.GameObjectService;
 import com.metalheart.service.state.ShapeService;
-import com.metalheart.model.game.GameObject;
 import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +23,9 @@ public class GameObjectServiceImpl implements GameObjectService {
     }
 
     @Override
-    public GameObject newWall(Vector2d position, float rotationAngleRadian) {
+    public Wall newWall(Vector2d position, float rotationAngleRadian) {
         long id = gameObjectSequence.incrementAndGet();
-        return new GameObject(id, shapeService.wallShape(), Material.STATIC, position);
+        return new Wall(id, shapeService.wallShape(), Material.STATIC, position);
     }
 
     @Override
@@ -34,9 +35,9 @@ public class GameObjectServiceImpl implements GameObjectService {
     }
 
     @Override
-    public GameObject newExplosion(Vector2d position, float rotationAngleRadian) {
+    public Explosion newExplosion(Vector2d position, float rotationAngleRadian) {
         long id = gameObjectSequence.incrementAndGet();
-        return new GameObject(id, shapeService.bulletShape(), Material.STATIC, position);
+        return new Explosion(id, shapeService.bulletShape(), Material.STATIC, position);
     }
 
     @Override

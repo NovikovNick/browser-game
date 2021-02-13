@@ -13,6 +13,9 @@ import lombok.EqualsAndHashCode;
 @Builder
 @EqualsAndHashCode(of = "sessionId")
 public class PlayerSnapshot {
+
+    private long sequenceNumber;
+    private long timestamp;
     private Player character;
     private List<Player> enemies;
     private Set<Bullet> projectiles;

@@ -1,38 +1,38 @@
 package com.metalheart.converter;
 
-import com.metalheart.model.StateSnapshot;
+import com.metalheart.model.PlayerSnapshot;
+import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.model.response.GameObjectView;
 import com.metalheart.model.response.PlayerView;
 import com.metalheart.model.response.SnapshotView;
-import com.metalheart.model.game.GameObject;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StateSnapshotToSnapshotViewConverter implements Converter<StateSnapshot, SnapshotView> {
+public class PlayerSnapshotToSnapshotViewConverter implements Converter<PlayerSnapshot, SnapshotView> {
 
     @Override
-    public SnapshotView convert(StateSnapshot source) {
+    public SnapshotView convert(PlayerSnapshot source) {
 
-        PlayerView character = convert(source.getSnapshot().getCharacter());
+        PlayerView character = convert(source.getCharacter());
 
-        List<PlayerView> enemies = source.getSnapshot().getEnemies().stream()
-                .map(this::convert)
-                .collect(Collectors.toList());
+        List<PlayerView> enemies = source.getEnemies().stream()
+            .map(this::convert)
+            .collect(Collectors.toList());
 
-        List<GameObjectView> walls = source.getSnapshot().getWalls().stream()
+        List<GameObjectView> walls = source.getWalls().stream()
             .map(this::convertGameObject)
             .collect(Collectors.toList());
 
-        List<GameObjectView> explosions = source.getSnapshot().getExplosions().stream()
+        List<GameObjectView> explosions = source.getExplosions().stream()
             .map(this::convertGameObject)
             .collect(Collectors.toList());
 
 
-        List<GameObjectView> projectiles = source.getSnapshot().getProjectiles()
+        List<GameObjectView> projectiles = source.getProjectiles()
             .stream()
             .map(this::convertGameObject)
             .collect(Collectors.toList());
@@ -44,7 +44,7 @@ public class StateSnapshotToSnapshotViewConverter implements Converter<StateSnap
             .walls(walls)
             .projectiles(projectiles)
             .explosions(explosions)
-            .removed(source.getSnapshot().getRemoved())
+            .removed(source.getRemoved())
             .build();
     }
 

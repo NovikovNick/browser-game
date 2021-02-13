@@ -10,5 +10,5 @@ public interface GameStateService {
 
     void unregisterPlayer(String playerId);
 
-    State calculateGameState(Integer tickDelay);
+    State step(Integer tickDelay);
 }

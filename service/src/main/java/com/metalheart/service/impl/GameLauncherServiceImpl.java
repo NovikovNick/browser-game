@@ -1,7 +1,7 @@
 package com.metalheart.service.impl;
 
+import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.State;
-import com.metalheart.model.StateSnapshot;
 import com.metalheart.model.event.ServerTicEvent;
 import com.metalheart.service.GameLauncherService;
 import com.metalheart.service.output.OutputService;
@@ -45,8 +45,8 @@ public class GameLauncherServiceImpl implements GameLauncherService {
 
                 Instant t0 = Instant.now();
 
-                State state = stateService.calculateGameState(TICK_DELAY);
-                Map<String, StateSnapshot> snapshots = outputService.toSnapshots(state);
+                State state = stateService.step(TICK_DELAY);
+                Map<String, PlayerSnapshot> snapshots = outputService.toSnapshots(state);
 
                 applicationEventPublisher.publishEvent(new ServerTicEvent(snapshots));
 

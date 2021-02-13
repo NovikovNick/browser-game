@@ -1,120 +1,56 @@
 package com.metalheart.service.output.impl;
 
 import com.metalheart.model.PlayerSnapshot;
+import com.metalheart.model.PlayerStatePresentation;
 import com.metalheart.model.State;
-import com.metalheart.model.StateSnapshot;
-import com.metalheart.model.struct.LimitedList;
 import com.metalheart.service.output.OutputService;
 import com.metalheart.service.output.PlayerSnapshotDeltaService;
 import com.metalheart.service.output.PlayerSnapshotService;
+import com.metalheart.service.state.PlayerPresentationService;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-import lombok.Builder;
-import lombok.Data;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OutputServiceImpl implements OutputService {
 
-    private AtomicLong sequenceNumber;
+    private final AtomicLong sequenceNumber;
 
-    private static int PLAYER_SNAPSHOT_SIZE = 32;
-    private Lock lock;
-
-    private final PlayerSnapshotService playerSnapshotService;
-    private final PlayerSnapshotDeltaService deltaService;
-    private Map<String, LimitedList<Snapshot>> snapshots;
+    private final PlayerSnapshotService projectionService;
+    private final PlayerSnapshotDeltaService snapshotService;
+    private final PlayerPresentationService presentationService;
 
     public OutputServiceImpl(PlayerSnapshotService playerSnapshotService,
-                             PlayerSnapshotDeltaService deltaService) {
+                             PlayerSnapshotDeltaService deltaService,
+                             PlayerPresentationService playerPresentationService) {
         this.sequenceNumber = new AtomicLong();
-        this.playerSnapshotService = playerSnapshotService;
-        this.deltaService = deltaService;
-        this.snapshots = new HashMap<>();
-        this.lock = new ReentrantLock();
+        this.projectionService = playerSnapshotService;
+        this.snapshotService = deltaService;
+        this.presentationService = playerPresentationService;
     }
 
     @Override
-    public Map<String, StateSnapshot> toSnapshots(State state) {
+    public Map<String, PlayerSnapshot> toSnapshots(State state) {
 
         long timestamp = Instant.now().toEpochMilli();
         long sequenceNumber = this.sequenceNumber.incrementAndGet();
-        Map<String, Long> ackSN = state.getPlayersAckSN();
-        Map<String, PlayerSnapshot> playerToSnapshots = playerSnapshotService.splitState(state);
-        Map<String, StateSnapshot> res = new HashMap<>();
+        Map<String, PlayerSnapshot> res = new HashMap<>();
 
-        lock.lock();
-        try {
-            playerToSnapshots.forEach((sessionId, snapshot) -> {
+        projectionService.splitState(state).forEach((playerId, projection) -> {
 
-                snapshots.putIfAbsent(sessionId, new LimitedList<>(PLAYER_SNAPSHOT_SIZE));
-                LimitedList<Snapshot> playerStates = snapshots.get(sessionId);
-                playerStates.add(Snapshot.builder()
-                    .sequenceNumber(sequenceNumber)
-                    .ack(false)
-                    .snapshot(snapshot)
-                    .build());
+            PlayerStatePresentation presentation = presentationService.getPlayerStatePresentation(playerId);
 
-                Long ack = ackSN.get(sessionId);
+            PlayerSnapshot snapshot = snapshotService.getDelta(presentation, projection);
+            snapshot.setSequenceNumber(sequenceNumber);
+            snapshot.setTimestamp(timestamp);
 
-                Snapshot ackSnapshot = null;
-                if (ack != null) {
+            presentationService.saveSnapshot(playerId, snapshot);
 
-                    List<Snapshot> sentSnapshots = playerStates.pollAll()
-                        .stream()
-                        .sorted(Comparator.comparingLong(Snapshot::getSequenceNumber).reversed())
-                        .collect(Collectors.toList());
-                    for (Snapshot sentSnapshot : sentSnapshots) {
-
-                        if (sentSnapshot.getSequenceNumber() <= ack) {
-                            sentSnapshot.setAck(true);
-                            if (ackSnapshot == null || (sentSnapshot.getSequenceNumber() > ackSnapshot.getSequenceNumber())) {
-                                ackSnapshot = sentSnapshot;
-                            }
-                        } else {
-                            playerStates.add(sentSnapshot);
-                        }
-                    }
-                }
-                playerStates.add(ackSnapshot);
-
-                PlayerSnapshot delta = deltaService.calculateDelta(
-                    ackSnapshot == null ? null : ackSnapshot.getSnapshot(),
-                    playerStates.toList().stream().map(Snapshot::getSnapshot).collect(Collectors.toList()));
-
-                StateSnapshot stateSnapshot = StateSnapshot.builder()
-                    .sequenceNumber(sequenceNumber)
-                    .timestamp(timestamp)
-                    .snapshot(delta)
-                    .build();
-                res.put(sessionId, stateSnapshot);
-            });
-
-        } finally {
-            lock.unlock();
-        }
+            res.put(playerId, snapshot);
+        });
 
         return res;
-    }
-
-    @Data
-    @Builder
-    public static class Snapshot {
-
-        private long sequenceNumber;
-        private boolean ack;
-        private PlayerSnapshot snapshot;
-
-        @Override
-        public String toString() {
-            return (ack ? "+" : "-") + "[sn=" + sequenceNumber + "]";
-        }
     }
 }

@@ -24,4 +24,9 @@ public class Player extends GameObject {
         cloned.setUsername(username);
         return cloned;
     }
+
+    @Override
+    public GameObjectType getType() {
+        return GameObjectType.PLAYER;
+    }
 }

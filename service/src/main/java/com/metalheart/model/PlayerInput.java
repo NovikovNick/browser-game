@@ -1,11 +1,12 @@
 package com.metalheart.model;
 
 import java.time.Instant;
+import java.util.Set;
 import lombok.Data;
 
 @Data
 public class PlayerInput {
-    private Long ackSN;
+    private Set<Long> ackSN;
     private float rotationAngleRadian;
     private Boolean isPressedW;
     private Boolean isPressedA;

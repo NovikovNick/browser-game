@@ -1,9 +1,9 @@
 package com.metalheart.service.output;
 
+import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.State;
-import com.metalheart.model.StateSnapshot;
 import java.util.Map;
 
 public interface OutputService {
-    Map<String, StateSnapshot> toSnapshots(State state);
+    Map<String, PlayerSnapshot> toSnapshots(State state);
 }

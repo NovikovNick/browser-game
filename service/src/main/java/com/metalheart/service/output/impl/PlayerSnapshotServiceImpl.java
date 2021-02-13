@@ -1,21 +1,18 @@
 package com.metalheart.service.output.impl;
 
-import com.metalheart.model.PlayerSnapshot;
+import com.metalheart.model.PlayerStateProjection;
 import com.metalheart.model.State;
 import com.metalheart.model.common.Vector2d;
-import com.metalheart.model.game.Bullet;
+import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.service.output.PlayerSnapshotService;
-import com.metalheart.model.game.GameObject;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+
+import static com.metalheart.model.game.GameObjectType.PLAYER;
 
 @Service
 public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
@@ -29,57 +26,45 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
     }
 
     @Override
-    public Map<String, PlayerSnapshot> splitState(State state) {
+    public Map<String, PlayerStateProjection> splitState(State state) {
 
-        Map<String, PlayerSnapshot> snapshots = new HashMap<>();
+
+        Map<String, PlayerStateProjection> res = new HashMap<>();
         lock.lock();
         try {
 
             Map<String, Player> players = state.getPlayers();
-            Set<Bullet> projectiles = state.getProjectiles();
-            List<GameObject> explosions = state.getExplosions();
-            List<GameObject> walls = state.getWalls();
-
             players.forEach((id, player) -> {
 
-                Player cloned = player.clone();
+                PlayerStateProjection projection = new PlayerStateProjection();
 
-                List<Player> enemies = players.values().stream()
-                    .filter(enemy -> !player.equals(enemy))
-                    .map(Player::clone)
-                    .collect(Collectors.toList());
+                for (GameObject gameObject : state.getAll()) {
 
+                    if (!isVisible(player.getPos(), gameObject.getPos())) {
+                        continue;
+                    }
 
-                List<String> removedWalls = new ArrayList<>();
-                List<GameObject> playerWalls = new ArrayList<>();
-
-                for (GameObject wall : walls) {
-                    Vector2d playerPos = player.getPos();
-                    Vector2d wallPos = wall.getPos();
-
-                    if (Math.abs(playerPos.getD0() - wallPos.getD0()) < FIELD_OF_VIEW
-                        && Math.abs(playerPos.getD1() - wallPos.getD1()) < FIELD_OF_VIEW) {
-                        playerWalls.add(wall);
+                    if (PLAYER.equals(gameObject.getType())) {
+                        if (gameObject.equals(player)) {
+                            projection.setPlayer(player);
+                        } else {
+                            projection.addEnemy((Player) gameObject.clone());
+                        }
                     } else {
-                        removedWalls.add(wall.getId() + "");
+                        projection.addGameObject(gameObject.clone());
                     }
                 }
 
-                PlayerSnapshot snapshot = PlayerSnapshot.builder()
-                    .character(cloned)
-                    .enemies(enemies)
-                    .projectiles(projectiles.stream()
-                        .map(Bullet::clone)
-                        .collect(Collectors.toSet()))
-                    .explosions(explosions)
-                    .walls(playerWalls)
-                    .removed(removedWalls)
-                    .build();
-                snapshots.put(id, snapshot);
+                res.put(id, projection);
             });
         } finally {
             lock.unlock();
         }
-        return snapshots;
+        return res;
+    }
+
+    private boolean isVisible(Vector2d playerPos, Vector2d objPos) {
+        return Math.abs(playerPos.getD0() - objPos.getD0()) < FIELD_OF_VIEW
+            && Math.abs(playerPos.getD1() - objPos.getD1()) < FIELD_OF_VIEW;
     }
 }
