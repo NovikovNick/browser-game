@@ -17,7 +17,7 @@ public class SeparatingAxisTheoremAlgorithm implements NarrowPhaseAlgorithm {
 
     @Override
     public CollisionResult findCollision(CollisionPair pair) {
-        return detectCollision(pair.getIncident().getShape(), pair.getReference().getShape());
+        return detectCollision(pair.getIncident().getShapePositioned(), pair.getReference().getShapePositioned());
     }
 
     public CollisionResult detectCollision(Line a, Line b) {

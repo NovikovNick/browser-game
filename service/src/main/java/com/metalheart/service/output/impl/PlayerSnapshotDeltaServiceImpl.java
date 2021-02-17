@@ -3,11 +3,13 @@ package com.metalheart.service.output.impl;
 import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.PlayerStatePresentation;
 import com.metalheart.model.PlayerStateProjection;
+import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.service.output.PlayerSnapshotDeltaService;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -59,6 +61,7 @@ public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaServic
 
         Stream
             .concat(movedObjects.stream(), newObjects.stream())
+            .sorted(byDistanceTo(player.getPos()))
             .limit(GAME_OBJECT_MAX_SIZE)
             .forEach(gameObject -> {
 
@@ -90,6 +93,15 @@ public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaServic
             .build();
 
         return res;
+    }
+
+    private Comparator<? super GameObject> byDistanceTo(Vector2d position) {
+
+        return Comparator.<GameObject>comparingInt(obj -> {
+            int dist0 = (int) Math.abs(position.getD0() - obj.getPos().getD0());
+            int dist1 = (int) Math.abs(position.getD1() - obj.getPos().getD1());
+            return Math.max(dist0, dist1);
+        });
     }
 
     private boolean isPositionEqual(GameObject o1, GameObject o2) {

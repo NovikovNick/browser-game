@@ -56,21 +56,92 @@ let timerId = setTimeout(function tick() {
     const snapshots = state.snapshots;
     const walls = state.walls;
 
-    let character = state.character;
-
     if (snapshots) {
         const fst = snapshots[0]
         const snd = snapshots[1]
 
-        
-
-        console.log(fst)
-        let enemies = [];
-        let projectiles = [];
-        let explosions = [];
-        const updatedWalls = [];
-
         if(fst && snd) {
+
+            const frame = fst.timestamp - snd.timestamp;
+            const now = new Date().getTime();
+            const delay = now - fst.timestamp;
+            const mod = frame < delay ? 1 : delay / frame;
+
+            let enemies = [];
+            let projectiles = [];
+            let explosions = [];
+
+            // character
+            const character = interpolatePlayer(fst.character, snd.character, mod);
+            const offset = [
+                character.gameObject.pos[0] - center[0],
+                character.gameObject.pos[1] - center[1]
+            ];
+
+            if (character) {
+                character.gameObject.pos = center;
+                character.gameObject.shape = ShapeService.getPlayerShape().map(p => {
+                    return GeometryService.rotate(
+                        [p[0] + center[0], p[1] + center[1]],
+                        character.gameObject.rot,
+                        center
+                    );
+                });
+            }
+
+            // wall
+            const wallGroupedById = {};
+            for (let i = 0; i < walls.length; i++)  {
+                const item = walls[i];
+                const id = item.id;
+
+                const pos = [item.origin[0] - offset[0], item.origin[1] - offset[1]];
+                wallGroupedById[id] = {
+                    origin: item.origin,
+                    id: id,
+                    pos: pos,
+                    rot: item.rot,
+                    shape: ShapeService.getWallShape().map(p => {
+                        return GeometryService.rotate([p[0] + pos[0], p[1] + pos[1]], item.rot, pos);
+                    })
+                };
+            }
+
+            for (let i = snapshots.length - 1; i >=0 ; i--)  {
+                const snapshot = snapshots[i];
+
+                const groupedById = snapshot.walls.reduce((r, a) => {r[a.id] = a;return r;}, {});
+
+                for (const [id, item] of Object.entries(groupedById)) {
+
+                    if(!(id in wallGroupedById)) {
+                        const pos = [item.pos[0] - offset[0], item.pos[1] - offset[1]];
+                        wallGroupedById[id] = {
+                            origin: item.pos,
+                            id: id,
+                            pos: pos,
+                            rot: item.rot,
+                            shape: ShapeService.getWallShape().map(p => {
+                                return GeometryService.rotate([p[0] + pos[0], p[1] + pos[1]], item.rot, pos);
+                            })
+                        };
+                    }
+
+                    for(const removed of snapshot.removed) {
+                        delete wallGroupedById[removed];
+                    }
+                }
+            }
+
+            const updatedWalls = [];
+            for (const [id, item] of Object.entries(wallGroupedById)) {
+                updatedWalls.push(item);
+            }
+            store.dispatch(actions.updateState(character, enemies, projectiles, explosions, updatedWalls));
+        }
+
+
+        /*if(fst && snd) {
             const frame = fst.timestamp - snd.timestamp;
             const now = new Date().getTime();
             const delay = now - fst.timestamp;
@@ -79,7 +150,7 @@ let timerId = setTimeout(function tick() {
                 0,
                 0
             ];
-            let str = "Snapshots: ";
+
             for (let i = 0; i < snapshots.length; i++)  {
 
                 const wallObjIds = new Set();
@@ -118,9 +189,9 @@ let timerId = setTimeout(function tick() {
                     }
                 })
             }
-        }
+        }*/
 
-        if (fst && snd && fst.character && snd.character) {
+        /*if (fst && snd && fst.character && snd.character) {
 
             const frame = fst.timestamp - snd.timestamp;
             const now = new Date().getTime();
@@ -218,9 +289,8 @@ let timerId = setTimeout(function tick() {
                     explosions.push({timestamp: now, point: pos})
                 })
             }
-
-        }
-        store.dispatch(actions.updateState(character, enemies, projectiles, explosions, updatedWalls));
+        }*/
+        //store.dispatch(actions.updateState(character, enemies, projectiles, explosions, updatedWalls));
     }
 
     timerId = setTimeout(tick, 15);

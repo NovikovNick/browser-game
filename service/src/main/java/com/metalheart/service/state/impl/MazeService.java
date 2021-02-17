@@ -22,8 +22,8 @@ public class MazeService implements WallService {
         int size = 100;
         Vector2d offset = Vector2d.of(-2000, 300);
 
-        int width = 40;
-        int height = 3;
+        int width = 100;
+        int height = 100;
 
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {

@@ -35,8 +35,8 @@ import static com.metalheart.model.game.GameObjectType.PLAYER;
 @Service
 public class GameStateServiceImpl implements GameStateService {
 
-    private static final float PLAYER_SPEED = 0.05f;
-    private static final float BULLET_SPEED = 1.5f;
+    private static final float PLAYER_SPEED = 20f;
+    private static final float BULLET_SPEED = 15f;
     private static final Duration BULLET_LIFETIME = Duration.ofSeconds(10);
 
     private final UsernameService usernameService;
@@ -69,14 +69,14 @@ public class GameStateServiceImpl implements GameStateService {
         this.lock = new ReentrantLock();
 
         this.state = new State();
-        this.wallService.generateGround().stream()
+        this.wallService.generateMaze().stream()
             .map(pos -> gameObjectService.newWall(pos, 0))
             .forEach(state::addGameObject);
     }
 
     @Override
     public void registerPlayer(String sessionId, String id) {
-        Player player = gameObjectService.newPlayer(Vector2d.of(10, 10), 0);
+        Player player = gameObjectService.newPlayer(Vector2d.of(1, 1), 0);
         player.setSessionId(sessionId);
         player.setUsername(id);
 
@@ -115,7 +115,7 @@ public class GameStateServiceImpl implements GameStateService {
     }
 
     @Override
-    public State step(Integer dt) {
+    public State step(float dt) {
 
         Map<String, List<PlayerInput>> inputs = playerInputService.pop();
         State state = null;
@@ -126,7 +126,6 @@ public class GameStateServiceImpl implements GameStateService {
 
             state = this.state.clone();
 
-            Collection<GameObject> bodies = state.getAll();
 
             // confirm previous sent snapshots
             for (String sessionId : inputs.keySet()) {
@@ -151,7 +150,7 @@ public class GameStateServiceImpl implements GameStateService {
 
                     if (state.isPlayerRegistered(sessionId)) {
 
-                        float magnitude = PLAYER_SPEED * dt / requestCount;
+                        float magnitude = PLAYER_SPEED / requestCount;
                         Vector2d force = getForceDirection(req).scale(magnitude);
 
                         Player player = state.getPlayer(sessionId);
@@ -165,22 +164,26 @@ public class GameStateServiceImpl implements GameStateService {
                             Bullet bullet = gameObjectService.newBullet(player.getPos(), req.getRotationAngleRadian());
                             bullet.setPlayerId(player.getId());
                             bullet.setCreatedAt(now);
-                            bullet.setVelocity(bulletDir.scale(75));
+                            bullet.setVelocity(bulletDir.scale(BULLET_SPEED));
 
                             state.addGameObject(bullet);
                         }
                     }
                 }
             }
+
+            Collection<GameObject> bodies = state.getAll();
             for (GameObject body : bodies) {
+
                 if (body.getMass() != 0) {
-                    body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(0.2f)));
+                    // body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(10f)));
                 }
             }
 
             // integrate
             for (GameObject body : bodies) {
-                body.setVelocity(body.getVelocity().plus(body.getForce().scale(body.getInvMass() * dt)));
+                Vector2d scaledForce = body.getForce().scale(body.getInvMass() * dt);
+                body.setVelocity(body.getVelocity().plus(scaledForce));
                 body.setPos(body.getPos().plus(body.getVelocity()));
                 body.setForce(Vector2d.ZERO_VECTOR);
             }
@@ -193,10 +196,10 @@ public class GameStateServiceImpl implements GameStateService {
                 GameObject a = manifold.getA();
                 GameObject b = manifold.getB();
 
-                if(PLAYER.equals(a.getType())) {
+                if (PLAYER.equals(a.getType())) {
 
                     Vector2d pos = AABB2d.of(a.getPos(), b.getPos()).getCenter();
-                    // explosions.add(gameObjectService.newExplosion(pos, 0));
+                    // state.addGameObject(gameObjectService.newExplosion(pos, 0));
                 }
             }
             collisionResolver.resolve(manifolds);

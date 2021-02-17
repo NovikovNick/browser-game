@@ -39,7 +39,7 @@ public class GameObject implements Cloneable{
         this.pos = pos;
     }
 
-    public Polygon2d getShape() {
+    public Polygon2d getShapePositioned() {
         return shape.withOffset(pos);
     }
 

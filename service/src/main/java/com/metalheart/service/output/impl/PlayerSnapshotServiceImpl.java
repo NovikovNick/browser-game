@@ -17,7 +17,7 @@ import static com.metalheart.model.game.GameObjectType.PLAYER;
 @Service
 public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
 
-    public static final int FIELD_OF_VIEW = 600;
+    public static final int FIELD_OF_VIEW = 400;
 
     private Lock lock;
 

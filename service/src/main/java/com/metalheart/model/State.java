@@ -11,7 +11,9 @@ import java.util.Set;
 import lombok.Getter;
 import org.springframework.util.CollectionUtils;
 
-public class State implements Cloneable{
+import static com.metalheart.model.game.GameObjectType.PLAYER;
+
+public class State implements Cloneable {
 
     private final Map<Long, GameObject> all;
     private final Map<GameObjectType, Set<GameObject>> groupedByType;
@@ -22,8 +24,16 @@ public class State implements Cloneable{
 
     public State(State state) {
         this();
-        state.players.forEach((k, v) -> players.put(k, v.clone()));
-        state.all.values().stream().map(GameObject::clone).forEach(this::addGameObject);
+        state.all.values().stream()
+            .map(GameObject::clone)
+            .forEach(gameObject -> {
+                if (PLAYER.equals(gameObject.getType())) {
+                    Player player = (Player) gameObject;
+                    addPlayer(player.getSessionId(), player);
+                } else {
+                    addGameObject(gameObject);
+                }
+            });
     }
 
 

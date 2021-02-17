@@ -147,9 +147,9 @@ public class Showcase extends AnimationTimer {
         canvasService.clear();
         for (GameObject body : bodies) {
             Vector2d velocity = body.getVelocity();
-            Vector2d c = AABB2d.of(body.getShape().getPoints()).getCenter();
+            Vector2d c = AABB2d.of(body.getShapePositioned().getPoints()).getCenter();
             canvasService.drawArrow(c, c.plus(velocity.scale(VECTOR_UNIT)), Color.RED);
-            canvasService.draw(body.getShape(), Color.WHITE);
+            canvasService.draw(body.getShapePositioned(), Color.WHITE);
         }
 
         for (Manifold m : manifolds) {
@@ -160,7 +160,7 @@ public class Showcase extends AnimationTimer {
 
             Vector2d rv = b.getVelocity().minus(a.getVelocity());
 
-            Vector2d c = AABB2d.of(a.getShape().getPoints()).getCenter();
+            Vector2d c = AABB2d.of(a.getShapePositioned().getPoints()).getCenter();
             canvasService.drawArrow(c, c.plus(normal.scale(VECTOR_UNIT)), Color.GREEN);
             // canvasService.drawArrow(c, c.plus(rv.scale(VECTOR_UNIT)), Color.BLUE);
             // canvasService.drawArrow(c, c.plus(tangent.scale(jt * VECTOR_UNIT)), Color.AQUA);

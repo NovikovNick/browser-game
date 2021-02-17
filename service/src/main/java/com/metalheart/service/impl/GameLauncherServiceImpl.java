@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class GameLauncherServiceImpl implements GameLauncherService {
 
-    private static final int TICK_RATE = 15;
+    private static final int TICK_RATE = 30;
     private static final int TICK_DELAY = 1000 / TICK_RATE;
 
     private AtomicBoolean running;

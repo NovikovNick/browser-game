@@ -93,7 +93,7 @@ public class SweepAndPruneAlgorithm implements BroadPhaseAlgorithm {
 
         private Entry(GameObject body) {
             this.body = body;
-            this.aabb = AABB2d.of(body.getShape().getPoints());
+            this.aabb = AABB2d.of(body.getShapePositioned().getPoints());
         }
     }
 }
