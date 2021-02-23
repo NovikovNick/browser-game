@@ -14,7 +14,7 @@ import com.metalheart.service.physic.CollisionDetector;
 import com.metalheart.service.physic.CollisionResolver;
 import com.metalheart.service.state.GameObjectService;
 import com.metalheart.service.state.GameStateService;
-import com.metalheart.service.state.PlayerPresentationService;
+import com.metalheart.service.output.PlayerPresentationService;
 import com.metalheart.service.state.UsernameService;
 import com.metalheart.service.state.WallService;
 import java.time.Duration;
@@ -69,7 +69,7 @@ public class GameStateServiceImpl implements GameStateService {
         this.lock = new ReentrantLock();
 
         this.state = new State();
-        this.wallService.generateMaze().stream()
+        this.wallService.generateGround().stream()
             .map(pos -> gameObjectService.newWall(pos, 0))
             .forEach(state::addGameObject);
     }

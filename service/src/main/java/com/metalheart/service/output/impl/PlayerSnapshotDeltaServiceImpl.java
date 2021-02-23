@@ -3,15 +3,12 @@ package com.metalheart.service.output.impl;
 import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.PlayerStatePresentation;
 import com.metalheart.model.PlayerStateProjection;
-import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Bullet;
 import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
 import com.metalheart.service.output.PlayerSnapshotDeltaService;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -19,8 +16,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaService {
-
-    public static final int GAME_OBJECT_MAX_SIZE = 10;
 
     @Override
     public PlayerSnapshot getDelta(PlayerStatePresentation base, PlayerStateProjection projection) {
@@ -50,58 +45,37 @@ public class PlayerSnapshotDeltaServiceImpl implements PlayerSnapshotDeltaServic
                 }
             });
 
-
-
-        // get different
         Player player = projection.getPlayer();
-        List<Player> enemies = new ArrayList<>();
-        Set<Bullet> projectiles = new HashSet<>();
-        List<GameObject> explosions = new ArrayList<>();
-        List<GameObject> walls = new ArrayList<>();
-
-        Stream
-            .concat(movedObjects.stream(), newObjects.stream())
-            .sorted(byDistanceTo(player.getPos()))
-            .limit(GAME_OBJECT_MAX_SIZE)
-            .forEach(gameObject -> {
-
-                switch (gameObject.getType()) {
-                    case PLAYER:
-                        if (!gameObject.equals(player)) {
-                            enemies.add((Player) gameObject);
-                        }
-                        break;
-                    case WALL:
-                        walls.add(gameObject);
-                        break;
-                    case EXPLOSION:
-                        explosions.add(gameObject);
-                        break;
-                    case BULLET:
-                        projectiles.add((Bullet) gameObject);
-                        break;
-                }
-            });
-
         PlayerSnapshot res = PlayerSnapshot.builder()
             .character(player)
-            .enemies(enemies)
-            .projectiles(projectiles)
-            .explosions(explosions)
-            .walls(walls)
+            .enemies(new ArrayList<>())
+            .walls(new ArrayList<>())
+            .explosions(new ArrayList<>())
+            .projectiles(new HashSet<>())
             .removed(removedObjects.stream().map(GameObject::getId).map(String::valueOf).collect(Collectors.toList()))
             .build();
 
+        Stream
+            .concat(movedObjects.stream(), newObjects.stream())
+            .forEach(gameObject -> {
+                switch (gameObject.getType()) {
+                    case PLAYER:
+                        if (!gameObject.equals(player)) {
+                            res.getEnemies().add((Player) gameObject);
+                        }
+                        break;
+                    case WALL:
+                        res.getWalls().add(gameObject);
+                        break;
+                    case EXPLOSION:
+                        res.getExplosions().add(gameObject);
+                        break;
+                    case BULLET:
+                        res.getProjectiles().add((Bullet) gameObject);
+                        break;
+                }
+            });
         return res;
-    }
-
-    private Comparator<? super GameObject> byDistanceTo(Vector2d position) {
-
-        return Comparator.<GameObject>comparingInt(obj -> {
-            int dist0 = (int) Math.abs(position.getD0() - obj.getPos().getD0());
-            int dist1 = (int) Math.abs(position.getD1() - obj.getPos().getD1());
-            return Math.max(dist0, dist1);
-        });
     }
 
     private boolean isPositionEqual(GameObject o1, GameObject o2) {

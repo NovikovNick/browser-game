@@ -49,12 +49,31 @@ function interpolatePlayer(p1, p2, mod) {
     return character;
 }
 
+function equals(p1, p2) {
+    return p1[0] == p2[0] && p1[1] == p2[1];
+}
+
+function toGameObject(item, origin, offset, shape) {
+
+    const pos = [origin[0] - offset[0], origin[1] - offset[1]];
+    return {
+        origin: origin,
+        id: item.id,
+        pos: pos,
+        rot: item.rot,
+        shape: shape.map(p => {
+            return GeometryService.rotate([p[0] + pos[0], p[1] + pos[1]], item.rot, pos);
+        })
+    };
+}
+
 let timerId = setTimeout(function tick() {
 
     const center = [window.innerWidth / 2, window.innerHeight / 2]
     const state = store.getState().state;
     const snapshots = state.snapshots;
     const walls = state.walls;
+    const enemies = state.enemies;
 
     if (snapshots) {
         const fst = snapshots[0]
@@ -67,7 +86,6 @@ let timerId = setTimeout(function tick() {
             const delay = now - fst.timestamp;
             const mod = frame < delay ? 1 : delay / frame;
 
-            let enemies = [];
             let projectiles = [];
             let explosions = [];
 
@@ -91,45 +109,56 @@ let timerId = setTimeout(function tick() {
 
             // wall
             const wallGroupedById = {};
-            for (let i = 0; i < walls.length; i++)  {
-                const item = walls[i];
-                const id = item.id;
+            const enemiesGroupedById = {};
 
-                const pos = [item.origin[0] - offset[0], item.origin[1] - offset[1]];
-                wallGroupedById[id] = {
-                    origin: item.origin,
-                    id: id,
-                    pos: pos,
-                    rot: item.rot,
-                    shape: ShapeService.getWallShape().map(p => {
-                        return GeometryService.rotate([p[0] + pos[0], p[1] + pos[1]], item.rot, pos);
-                    })
-                };
+            for (const item of walls) {
+                wallGroupedById[item.id] = toGameObject(item, item.origin, offset, ShapeService.getWallShape());
+            }
+
+            for (const item of enemies) {
+                enemiesGroupedById[item.id] = toGameObject(item, item.origin, offset, ShapeService.getPlayerShape());
             }
 
             for (let i = snapshots.length - 1; i >=0 ; i--)  {
+
                 const snapshot = snapshots[i];
+                snapshot.removed.length > 0 && console.log(i, snapshot.removed)
 
-                const groupedById = snapshot.walls.reduce((r, a) => {r[a.id] = a;return r;}, {});
+                for (const item of snapshot.walls) {
 
-                for (const [id, item] of Object.entries(groupedById)) {
+                    const id = item.id;
 
                     if(!(id in wallGroupedById)) {
-                        const pos = [item.pos[0] - offset[0], item.pos[1] - offset[1]];
-                        wallGroupedById[id] = {
-                            origin: item.pos,
-                            id: id,
-                            pos: pos,
-                            rot: item.rot,
-                            shape: ShapeService.getWallShape().map(p => {
-                                return GeometryService.rotate([p[0] + pos[0], p[1] + pos[1]], item.rot, pos);
-                            })
-                        };
+                        wallGroupedById[id] = toGameObject(item, item.pos, offset, ShapeService.getWallShape());
                     }
+                }
 
-                    for(const removed of snapshot.removed) {
-                        delete wallGroupedById[removed];
+
+                for (const item of snapshot.enemies) {
+
+                    const obj = item.obj;
+                    const id = obj.id;
+
+                    if(!(id in enemiesGroupedById)) {
+
+                        enemiesGroupedById[id] = toGameObject(obj, obj.pos, offset, ShapeService.getPlayerShape());
+
+                    } else if(!equals(enemiesGroupedById[id].origin, obj.pos) ) {
+
+                        enemiesGroupedById[id] = toGameObject(
+                            interpolateGameObject(enemiesGroupedById[id], obj, mod),
+                            obj.pos,
+                            offset,
+                            ShapeService.getPlayerShape());
                     }
+                }
+            }
+
+            for (let i = snapshots.length - 1; i >=0 ; i--) {
+                const snapshot = snapshots[i];
+                for(const removed of snapshot.removed) {
+                    delete wallGroupedById[removed];
+                    delete enemiesGroupedById[removed];
                 }
             }
 
@@ -137,7 +166,14 @@ let timerId = setTimeout(function tick() {
             for (const [id, item] of Object.entries(wallGroupedById)) {
                 updatedWalls.push(item);
             }
-            store.dispatch(actions.updateState(character, enemies, projectiles, explosions, updatedWalls));
+
+            const updatedEnemies = [];
+            for (const [id, item] of Object.entries(enemiesGroupedById)) {
+                updatedEnemies.push(item);
+            }
+
+
+            store.dispatch(actions.updateState(character, updatedEnemies, projectiles, explosions, updatedWalls));
         }
 
 

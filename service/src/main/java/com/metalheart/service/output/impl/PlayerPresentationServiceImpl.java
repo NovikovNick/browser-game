@@ -1,10 +1,10 @@
-package com.metalheart.service.state.impl;
+package com.metalheart.service.output.impl;
 
 import com.metalheart.model.PlayerSnapshot;
 import com.metalheart.model.PlayerStatePresentation;
 import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
-import com.metalheart.service.state.PlayerPresentationService;
+import com.metalheart.service.output.PlayerPresentationService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

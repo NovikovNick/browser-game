@@ -7,6 +7,7 @@ import Player from "../component/Player";
 import Polygon from "../component/Polygon";
 import Wall from "../component/Wall";
 import Point from "../component/Point";
+import Enemy from "../component/Enemy";
 
 function Grid({width, height, n}) {
     const grid = [];
@@ -99,7 +100,7 @@ function Board({character, enemies, projectiles, explosions, walls}) {
 */}
             <Player character={character} isEnemy={false} color={"blue"}/>
 
-            {enemies.map((item, i) => <Player key={i} character={item} isEnemy={true} color={"red"}/>)}
+            {enemies.map((item, i) => <Enemy key={i} gameObject={item} color={"red"}/>)}
             {walls.map((wall, i) => <Wall key={i} gameObject={wall}/>)}
             {projectiles.map((projectile, i) => projectile && <Polygon key={i} polygon={projectile.shape} color={"red"}/>)}
             {explosions.map((explosion, i) => <Point key={i} data={explosion.point} radius={(now - explosion.timestamp) / 1000 * 60} color={"yellow"}/>)}

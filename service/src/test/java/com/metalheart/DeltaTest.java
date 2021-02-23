@@ -1,16 +1,17 @@
 package com.metalheart;
 
 import com.metalheart.model.PlayerSnapshot;
-import com.metalheart.model.State;
+import com.metalheart.model.PlayerStatePresentation;
+import com.metalheart.model.PlayerStateProjection;
+import com.metalheart.model.common.Material;
+import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.Player;
-import com.metalheart.service.output.impl.OutputServiceImpl;
+import com.metalheart.model.game.Wall;
+import com.metalheart.service.output.PlayerSnapshotDeltaService;
 import com.metalheart.service.output.impl.PlayerSnapshotDeltaServiceImpl;
-import com.metalheart.service.output.impl.PlayerSnapshotServiceImpl;
-import com.metalheart.service.state.GameObjectService;
-import com.metalheart.service.state.impl.GameObjectServiceImpl;
-import com.metalheart.service.state.impl.ShapeServiceImpl;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -18,29 +19,73 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class DeltaTest {
 
-    private OutputServiceImpl agentPoolCreator;
-    private GameObjectService gameObjectService;
+    private static final AtomicLong OBJECT_SEQ = new AtomicLong(0);
 
-    public DeltaTest() { // todo init by spring context
-        this.agentPoolCreator = new OutputServiceImpl(
-            new PlayerSnapshotServiceImpl(),
-            new PlayerSnapshotDeltaServiceImpl()
-        );
-        this.gameObjectService = new GameObjectServiceImpl(new ShapeServiceImpl());
-    }
+    public static final Polygon2d BOUNDING_BOX = new Polygon2d(
+        new Vector2d(-50, -50),
+        new Vector2d(50, -50),
+        new Vector2d(50, 50),
+        new Vector2d(-50, 50)
+    );
 
     @Test
     public void test() {
         // arrange
-        Map<String, Player> players = Map.of(
-            "0", gameObjectService.newPlayer(Vector2d.ZERO_VECTOR, 0)
-        );
-        State state = State.builder().players(players).build();
+
+        PlayerSnapshotDeltaService deltaService = new PlayerSnapshotDeltaServiceImpl();
+
+        PlayerStateProjection projection = new PlayerStateProjection();
+        projection.setPlayer(newPlayer());
+        projection.addGameObject(newWall());
+
+        PlayerStatePresentation base = new PlayerStatePresentation();
+
         // act
-        Map<String, PlayerSnapshot> delta = agentPoolCreator.toSnapshots(state);
+        PlayerSnapshot snapshot = deltaService.getDelta(base, projection);
+
         // assert
-        System.out.println(delta);
+        Assert.assertEquals(1, snapshot.getWalls().size());
+        Assert.assertNotNull(snapshot.getCharacter());
     }
 
+    @Test
+    public void test2() {
+        // arrange
+        PlayerSnapshotDeltaService deltaService = new PlayerSnapshotDeltaServiceImpl();
 
+        Player player = newPlayer();
+        Player enemy = newPlayer();
+
+        PlayerStateProjection projection = new PlayerStateProjection();
+        projection.setPlayer(player);
+
+        PlayerStatePresentation base = new PlayerStatePresentation();
+        base.setPlayer(player);
+        base.addEnemy(enemy);
+
+        // act
+        PlayerSnapshot snapshot = deltaService.getDelta(base, projection);
+
+        // assert
+        Assert.assertTrue(snapshot.getRemoved().contains(String.valueOf(enemy.getId())));
+    }
+
+    private Player newPlayer() {
+        long id = OBJECT_SEQ.incrementAndGet();
+        Player player = new Player(id, BOUNDING_BOX, Material.WOOD, Vector2d.ZERO_VECTOR);
+        player.setSessionId("sessionId_" + id);
+        return player;
+    }
+
+    private Player newPlayer(Vector2d pos) {
+        long id = OBJECT_SEQ.incrementAndGet();
+        Player player = new Player(id, BOUNDING_BOX, Material.WOOD, pos);
+        player.setSessionId("sessionId_" + id);
+        return player;
+    }
+
+    private Wall newWall() {
+        long id = OBJECT_SEQ.incrementAndGet();
+        return new Wall(id, BOUNDING_BOX, Material.WOOD, Vector2d.ZERO_VECTOR);
+    }
 }
