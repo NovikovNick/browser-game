@@ -67,6 +67,7 @@ function toGameObject(item, origin, offset, shape) {
     };
 }
 
+const frameRate = 1000 / 60;
 let timerId = setTimeout(function tick() {
 
     const center = [window.innerWidth / 2, window.innerHeight / 2]
@@ -122,8 +123,6 @@ let timerId = setTimeout(function tick() {
             for (let i = snapshots.length - 1; i >=0 ; i--)  {
 
                 const snapshot = snapshots[i];
-                snapshot.removed.length > 0 && console.log(i, snapshot.removed)
-
                 for (const item of snapshot.walls) {
 
                     const id = item.id;
@@ -329,8 +328,8 @@ let timerId = setTimeout(function tick() {
         //store.dispatch(actions.updateState(character, enemies, projectiles, explosions, updatedWalls));
     }
 
-    timerId = setTimeout(tick, 15);
-}, 15);
+    timerId = setTimeout(tick, frameRate);
+}, frameRate);
 
 function App() {
     return (

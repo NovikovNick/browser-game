@@ -2,6 +2,8 @@ package com.metalheart.service.output.impl;
 
 import com.metalheart.model.PlayerStateProjection;
 import com.metalheart.model.State;
+import com.metalheart.model.common.AABB2d;
+import com.metalheart.model.common.Polygon2d;
 import com.metalheart.model.common.Vector2d;
 import com.metalheart.model.game.GameObject;
 import com.metalheart.model.game.Player;
@@ -40,7 +42,7 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
 
                 for (GameObject gameObject : state.getAll()) {
 
-                    if (!isVisible(player.getPos(), gameObject.getPos())) {
+                    if (!isVisible(player.getPos(), gameObject.getShapePositioned())) {
                         continue;
                     }
 
@@ -66,5 +68,12 @@ public class PlayerSnapshotServiceImpl implements PlayerSnapshotService {
     private boolean isVisible(Vector2d playerPos, Vector2d objPos) {
         return Math.abs(playerPos.getD0() - objPos.getD0()) < FIELD_OF_VIEW
             && Math.abs(playerPos.getD1() - objPos.getD1()) < FIELD_OF_VIEW;
+    }
+
+    private boolean isVisible(Vector2d playerPos, Polygon2d polygon) {
+        AABB2d aabb = AABB2d.of(polygon.getPoints());
+        return isVisible(playerPos, aabb.getMax())
+            || isVisible(playerPos, aabb.getMin())
+            || isVisible(playerPos, aabb.getCenter());
     }
 }

@@ -1,13 +1,8 @@
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
 
 import * as Store from "../store/ReduxActions";
-import Player from "../component/Player";
-import Polygon from "../component/Polygon";
-import Wall from "../component/Wall";
-import Point from "../component/Point";
-import Enemy from "../component/Enemy";
 
 function Grid({width, height, n}) {
     const grid = [];
@@ -81,32 +76,136 @@ function intersect(p1, p2, p3, p4) {
     };
 }
 const intersected = intersect(p1, p2, p3, p4);
-console.log(p1, p2, p3, p4, intersected)
+// console.log(p1, p2, p3, p4, intersected)
+
+let sequence = 0;
+let frame = 0;
+
+const environment = {
+    ground: new Image(),
+    isLoading: true
+}
+environment.ground.src = "/images/environment.png";
+environment.ground.onload = () => {
+    environment.isLoading = false;
+}
+
+const animation = {
+    characterWalkLeft : {
+        sprites: new Image(),
+        frameWidth: 108,
+        frameHeight: 140,
+        coords: [
+            [0, 0],
+            [108, 0],
+            [108*2, 0],
+            [108*3, 0],
+            [108*4, 0],
+            [108*5, 0],
+            [108*6, 0],
+            [108*7, 0]
+        ],
+        isLoading: true
+    }
+};
+animation.characterWalkLeft.sprites.src = "/images/sprite.png";
+animation.characterWalkLeft.sprites.onload = () => {
+    animation.characterWalkLeft.isLoading = false;
+}
+
+function isLoading () {
+    return environment.isLoading && animation.characterWalkLeft.isLoading;
+};
 
 function Board({character, enemies, projectiles, explosions, walls}) {
 
-    const now = new Date().getTime();
-    return (
-        <svg version="1.1"
-             baseProfile="full"
-             xmlns="http://www.w3.org/2000/svg">
-{/*
-            <Grid width={2000} height={2000} n={40}/>
+    const canvas = useRef(null);
 
-            <Line p1={p1} p2={p2} color={"red"}/>
-            <Line p1={p3} p2={p4} color={"red"}/>
+    useEffect(() => {
 
-            {intersected.intersect && <circle cx={intersected.point[0]} cy={intersected.point[1]} r={5} fill={"blue"}/>}
-*/}
-            <Player character={character} isEnemy={false} color={"blue"}/>
+        const ctx = canvas.current.getContext('2d');
+        ctx.font = "24px serif";
 
-            {enemies.map((item, i) => <Enemy key={i} gameObject={item} color={"red"}/>)}
-            {walls.map((wall, i) => <Wall key={i} gameObject={wall}/>)}
-            {projectiles.map((projectile, i) => projectile && <Polygon key={i} polygon={projectile.shape} color={"red"}/>)}
-            {explosions.map((explosion, i) => <Point key={i} data={explosion.point} radius={(now - explosion.timestamp) / 1000 * 60} color={"yellow"}/>)}
+        sequence++;
+        frame = sequence % 60;
 
-        </svg>
-    );
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, 2000, 1000)
+
+        // console.log(frame + " - " + Math.ceil(frame / 14))
+
+        ctx.fillStyle = 'white';
+        ctx.fillText("Frame number: " + frame, 10, 30);
+        ctx.fillText("Ping: " + 0, 10, 60);
+
+        if(isLoading()) {
+            ctx.fillText("connecting...", 10, 60);
+        } else {
+
+            const coord = animation.characterWalkLeft.coords[Math.ceil(frame / 9)]
+
+            { // player
+                const pos = character.gameObject.pos;
+                ctx.fillStyle = '#e6f7ff';
+                ctx.fillRect(pos[0]-400, pos[1]-400, 800, 800);
+
+                for (let i = 0; i < character.gameObject.shape.length; i++) {
+                    const p = character.gameObject.shape[i];
+
+                    ctx.drawImage(
+                        animation.characterWalkLeft.sprites,
+                        coord[0], coord[1],
+                        108, 140,
+                        pos[0] - 108/2, pos[1] - 140/2, 108, 140
+                    );
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(p[0], p[1], 5, 5);
+                }
+            }
+
+            {// enemies
+                for (let i = 0; i < enemies.length; i++) {
+                    const enemy = enemies[i];
+                    const pos = enemy.pos;
+
+                    for (let j = 0; j < enemy.shape.length; j++) {
+                        const p = enemy.shape[j];
+
+                        ctx.drawImage(
+                            animation.characterWalkLeft.sprites,
+                            coord[0], coord[1],
+                            108, 140,
+                            pos[0] - 108/2, pos[1] - 140/2, 108, 140
+                        );
+                        ctx.fillStyle = 'blue';
+                        ctx.fillRect(p[0], p[1], 5, 5);
+                    }
+                }
+            }
+
+            {// wall
+                for (let i = 0; i < walls.length; i++) {
+                    const pos = walls[i].pos;
+                    const wall = walls[i].shape;
+
+                    ctx.drawImage(
+                        environment.ground,
+                        184, 102,
+                        76, 76,
+                        pos[0] - 51, pos[1] - 49, 100, 100
+                    );
+
+                    for (let j = 0; j < wall.length; j++) {
+                        const p = wall[j];
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(p[0], p[1], 5, 5);
+                    }
+                }
+            }
+        }
+    });
+
+    return ( <canvas ref={canvas} width={2000} height={1000}/>);
 }
 
 const mapStateToProps = state => ({
