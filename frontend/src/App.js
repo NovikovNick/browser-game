@@ -67,7 +67,7 @@ function toGameObject(item, origin, offset, shape) {
     };
 }
 
-const frameRate = 1000 / 60;
+const frameRate = 15 // 1000 / 60;
 let timerId = setTimeout(function tick() {
 
     const center = [window.innerWidth / 2, window.innerHeight / 2]

@@ -20,6 +20,8 @@ public class Player extends GameObject {
     @Override
     public Player clone() {
         var cloned = new Player(getId(), getShape(), getMaterial(), getPos());
+        cloned.setForce(getForce());
+        cloned.setVelocity(getVelocity());
         cloned.setSessionId(sessionId);
         cloned.setUsername(username);
         return cloned;

@@ -35,8 +35,9 @@ import static com.metalheart.model.game.GameObjectType.PLAYER;
 @Service
 public class GameStateServiceImpl implements GameStateService {
 
-    private static final float PLAYER_SPEED = 20f;
-    private static final float BULLET_SPEED = 15f;
+    private static final float GRAVITY = 1.8f;
+    private static final float PLAYER_SPEED = GRAVITY * 1.8f;
+    private static final float BULLET_SPEED = PLAYER_SPEED * 1.8f;
     private static final Duration BULLET_LIFETIME = Duration.ofSeconds(10);
 
     private final UsernameService usernameService;
@@ -155,7 +156,6 @@ public class GameStateServiceImpl implements GameStateService {
 
                         Player player = state.getPlayer(sessionId);
                         player.setForce(player.getForce().plus(force));
-
                         if (req.getLeftBtnClicked()) {
 
                             Vector2d bulletDir = GeometryUtil.rotate(Vector2d.UNIT_VECTOR_D0.reversed(),
@@ -176,7 +176,7 @@ public class GameStateServiceImpl implements GameStateService {
             for (GameObject body : bodies) {
 
                 if (body.getMass() != 0) {
-                    // body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(10f)));
+                    body.setForce(body.getForce().plus(Vector2d.UNIT_VECTOR_D1.scale(GRAVITY)));
                 }
             }
 
@@ -184,6 +184,7 @@ public class GameStateServiceImpl implements GameStateService {
             for (GameObject body : bodies) {
                 Vector2d scaledForce = body.getForce().scale(body.getInvMass() * dt);
                 body.setVelocity(body.getVelocity().plus(scaledForce));
+                // System.out.println(body.getVelocity());
                 body.setPos(body.getPos().plus(body.getVelocity()));
                 body.setForce(Vector2d.ZERO_VECTOR);
             }

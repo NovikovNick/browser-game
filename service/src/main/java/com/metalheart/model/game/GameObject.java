@@ -54,7 +54,10 @@ public class GameObject implements Cloneable{
     }
 
     public GameObject clone() {
-        return new GameObject(id, shape, material, pos);
+        GameObject gameObject = new GameObject(id, shape, material, pos);
+        gameObject.setForce(force);
+        gameObject.setVelocity(velocity);
+        return gameObject;
     }
 
     public GameObjectType getType() {

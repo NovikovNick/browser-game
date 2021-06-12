@@ -132,7 +132,7 @@ function Board({character, enemies, projectiles, explosions, walls}) {
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, 2000, 1000)
 
-        // console.log(frame + " - " + Math.ceil(frame / 14))
+        console.log(frame + " - " + Math.ceil(frame / 9))
 
         ctx.fillStyle = 'white';
         ctx.fillText("Frame number: " + frame, 10, 30);
@@ -192,7 +192,7 @@ function Board({character, enemies, projectiles, explosions, walls}) {
                         environment.ground,
                         184, 102,
                         76, 76,
-                        pos[0] - 51, pos[1] - 49, 100, 100
+                        pos[0] - 50, pos[1] - 50, 100, 102
                     );
 
                     for (let j = 0; j < wall.length; j++) {
